@@ -1,9 +1,9 @@
 defmodule HorizonWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :horizon
 
-  socket "/socket", HorizonWeb.UserSocket,
-    websocket: true,
-    longpoll: false
+  #  socket "/socket", HorizonWeb.UserSocket,
+  #   websocket: true,
+  #  longpoll: false
 
   # Serve at "/" the static files from "priv/static" directory.
   #
