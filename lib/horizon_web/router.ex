@@ -9,5 +9,6 @@ defmodule HorizonWeb.Router do
     pipe_through :api
 
     get "/download", DownloadController, :download
+    post "/upload", UploadController, :upload
   end
 end

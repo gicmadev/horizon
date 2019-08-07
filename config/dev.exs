@@ -56,5 +56,5 @@ config :horizon, Horizon.Repo,
   username: "postgres",
   password: "postgres",
   database: "horizon_dev",
-  hostname: "localhost",
+  hostname: "postgres",
   pool_size: 10

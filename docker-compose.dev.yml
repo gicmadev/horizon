@@ -1,0 +1,39 @@
+# project_name=podcloud
+version: "3.4"
+services:
+  horizon:
+    image: "podcloud-horizon"
+    build:
+      context: .
+      target: runner
+    volumes:
+      - mix:/root/.mix
+      - ./downloads:/downloads
+      - .:/app
+    networks:
+      - traefik
+      - podcloud
+    ports:
+      - 4000:4000
+    labels:
+        traefik.frontend.rule: "HostRegexp:horizon.{host:podcloud}.test"
+        traefik.port: 4000
+
+  fake_s3:
+    image: lphoward/fake-s3
+    ports:
+      - 4569:4569
+    networks:
+      - traefik
+      - podcloud
+    volumes:
+      - /fakes3_root
+
+networks:
+  podcloud:
+    external: true
+  traefik:
+    external: true
+
+volumes:
+  mix:
