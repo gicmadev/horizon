@@ -1,5 +1,4 @@
-FROM elixir:1.8.1-alpine as runner
-RUN apk update && apk --no-cache add --virtual builds-deps build-base libressl libressl-dev
+FROM elixir:1.9.1 as runner
 
 VOLUME /root/.mix
 

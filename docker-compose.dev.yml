@@ -7,14 +7,17 @@ services:
       context: .
       target: runner
     volumes:
-      - mix:/root/.mix
+      - mix:/var/run/.mix
       - ./downloads:/downloads
       - .:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix
     networks:
       - traefik
       - podcloud
     ports:
       - 4000:4000
+    environment:
+      DISPLAY: "${DISPLAY}"
     labels:
         traefik.frontend.rule: "HostRegexp:horizon.{host:podcloud}.test"
         traefik.port: 4000

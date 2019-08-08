@@ -39,7 +39,7 @@ defmodule Horizon.MixProject do
       {:ecto_sql, "~> 3.0"},
       {:ecto_enum, "~> 1.3"},
       {:postgrex, ">= 0.0.0"},
-       {:poison, "~> 3.1"},
+      {:poison, "~> 3.1"},
       {:gettext, "~> 0.11"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
