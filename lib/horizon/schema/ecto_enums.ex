@@ -1,3 +1,4 @@
 import EctoEnum
 
-defenum ResourcesStorageEnum, :resources_storage, [:wasabi, :cloud_archive, :horizon]
+defenum(BlobStorageEnum, :blob_storage, [:wasabi, :cloud_archive, :horizon])
+defenum(AssetStatusEnum, :asset_status, [:processing, :ok])

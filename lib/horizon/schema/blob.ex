@@ -1,11 +1,11 @@
-defmodule Horizon.Schema.Resource do
+defmodule Horizon.Schema.Blob do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "resources" do
+  schema "blobs" do
     field :remote_id, :string
     field :sha256, :string
-    field :storage, ResourcesStorageEnum
+    field :storage, BlobStorageEnum
 
     timestamps()
   end

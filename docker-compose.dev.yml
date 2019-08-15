@@ -7,10 +7,9 @@ services:
       context: .
       target: runner
     volumes:
-      - mix:/var/run/.mix
+      - ./.mix:/var/run/.mix
       - ./downloads:/downloads
       - .:/app
-      - /tmp/.X11-unix:/tmp/.X11-unix
     networks:
       - traefik
       - podcloud

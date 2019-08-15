@@ -36,3 +36,5 @@ horizon-*.tar
 /config/*.secret.exs
 
 .elixir_ls/
+
+.mix

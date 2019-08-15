@@ -2,11 +2,11 @@ defmodule Horizon.Repo.Migrations.CreateResources do
   use Ecto.Migration
 
   def change do
-    ResourcesStorageEnum.create_type()
+    BlobStorageEnum.create_type()
 
-    create table(:resources) do
+    create table(:blobs) do
       add(:sha256, :string)
-      add(:storage, ResourcesStorageEnum.type())
+      add(:storage, BlobStorageEnum.type())
       add(:remote_id, :string)
 
       timestamps()

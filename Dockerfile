@@ -1,6 +1,8 @@
 FROM elixir:1.9.1 as runner
 
-VOLUME /root/.mix
+VOLUME /var/run/.mix
+
+ENV MIX_HOME=/var/run/.mix
 
 WORKDIR /app
 
