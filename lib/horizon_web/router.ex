@@ -8,7 +8,8 @@ defmodule HorizonWeb.Router do
   scope "/", HorizonWeb do
     pipe_through :api
 
-    get "/download", DownloadController, :download
+    get "/poc", DownloadController, :poc_download
+    get "/dl/:dl_id", DownloadController, :download
     post "/upload", UploadController, :upload
   end
 end

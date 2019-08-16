@@ -4,7 +4,15 @@ defmodule HorizonWeb.DownloadController do
   alias Horizon.DownloadManager
   alias Horizon.DownloadManager.DownloadStream
 
-  def download(conn, _params) do
+  def download(conn, params) do
+    [ asset_id, sha256 ] = String.split(params["dl_id"], ".", parts: 2)
+
+    conn
+    |> Plug.Conn.put_resp_header("content-type", "application/json; charset=utf-8")
+    |> Plug.Conn.send_resp(200, Poison.encode!(%{asset_id: asset_id, sha256: sha256}, pretty: true))
+  end
+
+  def poc_download(conn, _params) do
     file = %{
       url: "https://podshows.download/p2p/video/P2P37.mp4",
       content_type: "video/mp4",

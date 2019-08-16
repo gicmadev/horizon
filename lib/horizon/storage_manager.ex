@@ -38,6 +38,11 @@ defmodule Horizon.StorageManager do
     {:ok, asset}
   end
 
+  def get_file(asset_id) do
+    asset = Repo.get_by!(Asset, id: asset_id)
+
+  end
+
   # Server (callbacks)
 
   @impl true
