@@ -7,6 +7,7 @@ defmodule Horizon.Repo.Migrations.CreateFiles do
     create table(:assets) do
       add :filename, :string
       add :sha256, :string
+      add :content_type, :string
       add(:status, AssetStatusEnum.type())
 
       timestamps()

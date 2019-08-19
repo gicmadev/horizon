@@ -14,7 +14,7 @@ defmodule Horizon.StorageManager.Provider.Mirage do
 
     case res do
       nil ->
-        File.cp!(file.path, Path.join(@mirage_dir, sha256))
+        File.cp!(file.path, get_path(sha256))
 
         Repo.insert!(
           Blob.changeset(%Blob{}, %{
@@ -28,4 +28,9 @@ defmodule Horizon.StorageManager.Provider.Mirage do
         res
     end
   end
+
+  def get_blob_path(%{remote_id: sha256, storage: @name}), do: get_path(sha256)
+  
+  defp get_path(sha256), do: Path.join(@mirage_dir, sha256)
+
 end

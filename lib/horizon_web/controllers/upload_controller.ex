@@ -4,7 +4,7 @@ defmodule HorizonWeb.UploadController do
   def upload(conn, %{"file" => file}) do
     disable_timeout(conn)
 
-    {:ok, asset} = Horizon.StorageManager.store_file!(file)
+    {:ok, asset} = Horizon.StorageManager.store!(file)
 
     conn
     |> Plug.Conn.put_resp_header("content-type", "application/json; charset=utf-8")

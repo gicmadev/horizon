@@ -1,15 +1,20 @@
 defmodule HorizonWeb.DownloadController do
   use HorizonWeb, :controller
 
-  alias Horizon.DownloadManager
+  alias Horizon.StorageManager
   alias Horizon.DownloadManager.DownloadStream
 
   def download(conn, params) do
     [ asset_id, sha256 ] = String.split(params["dl_id"], ".", parts: 2)
 
-    conn
-    |> Plug.Conn.put_resp_header("content-type", "application/json; charset=utf-8")
-    |> Plug.Conn.send_resp(200, Poison.encode!(%{asset_id: asset_id, sha256: sha256}, pretty: true))
+    disable_timeout(conn)
+
+    case Horizon.StorageManager.download!(asset_id, sha256) do
+      {:downloaded, file_path} -> 
+        send_file_from_path(conn, file_path)
+      {:downloading, download_stream} ->
+        send_file_from_download_stream(conn, download_stream)
+    end
   end
 
   def poc_download(conn, _params) do
@@ -26,7 +31,7 @@ defmodule HorizonWeb.DownloadController do
 
     disable_timeout(conn)
 
-    case DownloadManager.ensure_downloaded(file.url, file.content_length) do
+    case Horizon.DownloadManager.ensure_downloaded(file.url, file.content_length) do
       {:downloaded, path} ->
         send_file_from_path(conn, path)
 

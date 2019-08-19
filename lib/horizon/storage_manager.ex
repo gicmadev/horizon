@@ -14,7 +14,7 @@ defmodule Horizon.StorageManager do
     )
   end
 
-  def store_file!(file) do
+  def store!(file) do
     sha256 = get_sha256(file.path)
 
     {:ok, asset} =
@@ -23,6 +23,7 @@ defmodule Horizon.StorageManager do
           Repo.insert!(
             Asset.changeset(%Asset{}, %{
               filename: file.filename,
+              content_type: MIME.from_path(file.filename),
               sha256: sha256,
               status: :processing
             })
@@ -38,8 +39,16 @@ defmodule Horizon.StorageManager do
     {:ok, asset}
   end
 
-  def get_file(asset_id) do
-    asset = Repo.get_by!(Asset, id: asset_id)
+  def download!(asset_id, sha256) do
+    assets = Asset.get_asset_and_blobs(asset_id, sha256)
+
+    mirage_blob = Enum.find(assets, fn a -> a.storage === :mirage end)
+
+    if mirage_blob !== nil do
+      {:downloaded, Mirage.get_blob_path(mirage_blob)}
+    else
+      raise "not yet implemented"
+    end
 
   end
 
