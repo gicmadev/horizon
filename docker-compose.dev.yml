@@ -15,8 +15,6 @@ services:
       - podcloud
     ports:
       - 4000:4000
-    environment:
-      DISPLAY: "${DISPLAY}"
     labels:
         traefik.frontend.rule: "HostRegexp:horizon.{host:podcloud}.test"
         traefik.port: 4000

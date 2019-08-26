@@ -4,12 +4,10 @@ defmodule HorizonWeb.DownloadController do
   alias Horizon.StorageManager
   alias Horizon.DownloadManager.DownloadStream
 
-  def download(conn, params) do
-    [ asset_id, sha256 ] = String.split(params["dl_id"], ".", parts: 2)
-
+  def download(conn, %{ash_id: ash_id}) do
     disable_timeout(conn)
 
-    case Horizon.StorageManager.download!(asset_id, sha256) do
+    case Horizon.StorageManager.download!(ash_id) do
       {:downloaded, file_path} -> 
         send_file_from_path(conn, file_path)
       {:downloading, download_stream} ->

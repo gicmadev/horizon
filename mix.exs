@@ -44,7 +44,9 @@ defmodule Horizon.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:httpoison, "~> 1.5"},
-      {:mime, "~> 1.2"}
+      {:mime, "~> 1.2"},
+      {:joken, "~> 2.0"},
+      {:jose, "~> 1.9"}
     ]
   end
 

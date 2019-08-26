@@ -36,20 +36,52 @@ defmodule Horizon.StorageManager do
 
     GenServer.cast(__MODULE__, {:process_asset, asset})
 
-    {:ok, asset}
+    {:ok, "#{asset.id}.#{sha256}"}
   end
 
-  def download!(asset_id, sha256) do
-    assets = Asset.get_asset_and_blobs(asset_id, sha256)
+  def download!(ash_id) do
+    {asset_id, sha256} = parse_ash_id(ash_id)
 
-    mirage_blob = Enum.find(assets, fn a -> a.storage === :mirage end)
+    blobs = Asset.get_asset_and_blobs(asset_id, sha256)
+
+    mirage_blob = Enum.find(blobs, fn a -> a.storage === :mirage end)
 
     if mirage_blob !== nil do
       {:downloaded, Mirage.get_blob_path(mirage_blob)}
     else
       raise "not yet implemented"
     end
+  end
 
+  def status(ash_id) do
+    IO.inspect(ash_id)
+
+    {asset_id, sha256} = parse_ash_id(ash_id)
+
+    blobs = Asset.get_asset_and_blobs(asset_id, sha256)
+
+    %{filename: filename, status: status} = List.first(blobs)
+
+    %{filename: filename, status: status, storages: Enum.map(blobs, fn a -> a.storage end)}
+  end
+
+  defp parse_ash_id(ash_id) do
+    IO.inspect(ash_id)
+
+   [ asset_id, sha256 ] = String.split(ash_id, ".", parts: 2)
+
+    IO.inspect(asset_id)
+    IO.inspect(sha256)
+
+   { asset_id, _ } = Integer.parse(asset_id)
+
+    IO.inspect(asset_id)
+
+   true = String.match?(sha256, ~r/[A-Fa-f0-9]{64}/)
+
+    IO.inspect(sha256)
+
+    { asset_id, sha256 }
   end
 
   # Server (callbacks)

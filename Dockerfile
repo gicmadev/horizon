@@ -2,6 +2,7 @@ FROM elixir:1.9.1 as runner
 
 VOLUME /var/run/.mix
 
+EXPOSE 4000
 ENV MIX_HOME=/var/run/.mix
 
 WORKDIR /app
