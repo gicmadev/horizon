@@ -12,31 +12,72 @@ defmodule Horizon.StorageManager do
       {},
       name: __MODULE__
     )
+  nd
+
+  def new! do
+    {:ok, asset} = Repo.insert(%Asset{status: :new})
+    asset
   end
 
-  def store!(file) do
-    sha256 = get_sha256(file.path)
+  def store!(asset_id, file) do
+    asset = Repo.get_by!(Asset, id: asset_id, status: :new)
 
-    {:ok, asset} =
+    sha256 = get_sha256(file.path)
+    %{size: size} = File.stat!(file.path)
+
+    {:ok, _} =
       Repo.transaction(fn ->
         asset =
-          Repo.insert!(
-            Asset.changeset(%Asset{}, %{
-              filename: file.filename,
-              content_type: MIME.from_path(file.filename),
-              sha256: sha256,
-              status: :processing
-            })
-          )
+          asset
+          |> Asset.changeset(%{
+            filename: file.filename,
+            content_type: MIME.from_path(file.filename),
+            sha256: sha256,
+            size: size,
+            status: :draft
+          })
+          |> Repo.update!()
 
         Mirage.store!(file, asset)
-
-        asset
       end)
 
-    GenServer.cast(__MODULE__, {:process_asset, asset})
+    {:ok, asset}
+  end
 
-    {:ok, "#{asset.id}.#{sha256}"}
+  def cancel!(asset_id) do
+    Repo.get_by!(
+      Asset,
+      id: asset_id,
+      status: :new
+    )
+    |> Repo.delete!()
+
+    {:ok, :deleted}
+  end
+
+  def remove!(asset_id) do
+    Repo.get!(
+      Asset,
+      asset_id
+    )
+    |> Repo.delete!()
+
+    {:ok, :deleted}
+  end
+
+  def burn!(asset_id) do
+    asset = Repo.get!(Asset, asset_id)
+
+    asset =
+      asset
+      |> Asset.changeset(%{
+        status: :processing
+      })
+      |> Repo.update!()
+
+    # start processing here
+
+    {:ok, asset}
   end
 
   def download!(ash_id) do
@@ -68,20 +109,20 @@ defmodule Horizon.StorageManager do
   defp parse_ash_id(ash_id) do
     IO.inspect(ash_id)
 
-   [ asset_id, sha256 ] = String.split(ash_id, ".", parts: 2)
+    [asset_id, sha256] = String.split(ash_id, ".", parts: 2)
 
     IO.inspect(asset_id)
     IO.inspect(sha256)
 
-   { asset_id, _ } = Integer.parse(asset_id)
+    {asset_id, _} = Integer.parse(asset_id)
 
     IO.inspect(asset_id)
 
-   true = String.match?(sha256, ~r/[A-Fa-f0-9]{64}/)
+    true = String.match?(sha256, ~r/[A-Fa-f0-9]{64}/)
 
     IO.inspect(sha256)
 
-    { asset_id, sha256 }
+    {asset_id, sha256}
   end
 
   # Server (callbacks)

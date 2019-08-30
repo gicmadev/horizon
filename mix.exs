@@ -40,6 +40,8 @@ defmodule Horizon.MixProject do
       {:ecto_enum, "~> 1.3"},
       {:postgrex, ">= 0.0.0"},
       {:poison, "~> 3.1"},
+      {:phoenix_html, "~> 2.11"},
+      {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:gettext, "~> 0.11"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},

@@ -17,6 +17,7 @@ services:
       - 4000:4000
     labels:
         traefik.frontend.rule: "HostRegexp:horizon.{host:podcloud}.test"
+        traefik.frontend.priority: 5555
         traefik.port: 4000
 
   fake_s3:

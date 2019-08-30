@@ -29,14 +29,14 @@ defmodule Horizon.Schema.Asset do
   def get_asset_and_blobs(asset_id, sha256) do
     Horizon.Repo.all(
       from(b in Blob,
-        join: (a in Asset),
+        join: a in Asset,
         on: a.sha256 == b.sha256,
         where: a.id == ^asset_id and a.sha256 == ^sha256,
         select: %{
-          id: a.id, 
-          status: a.status, 
-          filename: a.filename, 
-          sha256: a.sha256, 
+          id: a.id,
+          status: a.status,
+          filename: a.filename,
+          sha256: a.sha256,
           storage: b.storage,
           remote_id: b.remote_id
         }

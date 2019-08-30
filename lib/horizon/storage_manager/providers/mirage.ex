@@ -30,7 +30,6 @@ defmodule Horizon.StorageManager.Provider.Mirage do
   end
 
   def get_blob_path(%{remote_id: sha256, storage: @name}), do: get_path(sha256)
-  
-  defp get_path(sha256), do: Path.join(@mirage_dir, sha256)
 
+  defp get_path(sha256), do: Path.join(@mirage_dir, sha256)
 end

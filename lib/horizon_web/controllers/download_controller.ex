@@ -8,8 +8,9 @@ defmodule HorizonWeb.DownloadController do
     disable_timeout(conn)
 
     case Horizon.StorageManager.download!(ash_id) do
-      {:downloaded, file_path} -> 
+      {:downloaded, file_path} ->
         send_file_from_path(conn, file_path)
+
       {:downloading, download_stream} ->
         send_file_from_download_stream(conn, download_stream)
     end

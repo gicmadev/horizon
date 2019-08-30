@@ -9,8 +9,13 @@ defmodule HorizonWeb.Router do
     pipe_through :api
 
     get "/poc", DownloadController, :poc_download
-    get "/dl/:ash_id", DownloadController, :download
-    post "/upload", UploadController, :upload
-    get "/upload/:ash_id/status", UploadController, :status
+
+    get "/upload/new", UploadController, :new
+    post "/upload/:asset_id/cancel", UploadController, :burn
+    post "/upload/:asset_id", UploadController, :upload
+    get "/upload/:asset_id/status", UploadController, :status
+    post "/upload/:asset_id/burn", UploadController, :burn
+
+    get "/dl/:asset_id", DownloadController, :download
   end
 end
