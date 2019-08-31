@@ -7,6 +7,8 @@ defmodule Horizon.Schema.Asset do
   alias __MODULE__, as: Asset
   alias Horizon.Schema.Blob
 
+  @primary_key {:id, Ecto.UUID, autogenerate: true}
+
   schema "assets" do
     field :filename, :string, size: 512
     field :content_type, :string, size: 255, default: "application/octet-stream"

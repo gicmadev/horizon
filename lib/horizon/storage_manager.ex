@@ -12,11 +12,10 @@ defmodule Horizon.StorageManager do
       {},
       name: __MODULE__
     )
-  nd
+  end
 
   def new! do
-    {:ok, asset} = Repo.insert(%Asset{status: :new})
-    asset
+    Repo.insert(%Asset{status: :new})
   end
 
   def store!(asset_id, file) do
@@ -91,6 +90,13 @@ defmodule Horizon.StorageManager do
       {:downloaded, Mirage.get_blob_path(mirage_blob)}
     else
       raise "not yet implemented"
+    end
+  end
+
+  def get!(asset_id) do
+    case Repo.get(Asset, asset_id) do
+      nil -> nil
+      asset -> {:ok, asset}
     end
   end
 
