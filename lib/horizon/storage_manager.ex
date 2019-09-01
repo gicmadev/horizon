@@ -4,7 +4,7 @@ defmodule Horizon.StorageManager do
   alias Horizon.StorageManager.Provider.{Mirage}
 
   alias Horizon.Repo
-  alias Horizon.Schema.Asset
+  alias Horizon.Schema.Upload
 
   def start_link(_opts \\ []) do
     GenServer.start_link(
@@ -15,20 +15,20 @@ defmodule Horizon.StorageManager do
   end
 
   def new! do
-    Repo.insert(%Asset{status: :new})
+    Repo.insert(%Upload{status: :new})
   end
 
-  def store!(asset_id, file) do
-    asset = Repo.get_by!(Asset, id: asset_id, status: :new)
+  def store!(upload_id, file) do
+    asset = Repo.get_by!(Upload, id: upload_id, status: :new)
 
     sha256 = get_sha256(file.path)
     %{size: size} = File.stat!(file.path)
 
     {:ok, _} =
       Repo.transaction(fn ->
-        asset =
-          asset
-          |> Asset.changeset(%{
+        upload =
+          upload
+          |> Upload.changeset(%{
             filename: file.filename,
             content_type: MIME.from_path(file.filename),
             sha256: sha256,
@@ -37,16 +37,16 @@ defmodule Horizon.StorageManager do
           })
           |> Repo.update!()
 
-        Mirage.store!(file, asset)
+        Mirage.store!(file, upload)
       end)
 
-    {:ok, asset}
+    {:ok, upload}
   end
 
-  def cancel!(asset_id) do
+  def cancel!(upload_id) do
     Repo.get_by!(
-      Asset,
-      id: asset_id,
+      Upload,
+      id: upload_id,
       status: :new
     )
     |> Repo.delete!()
@@ -54,35 +54,35 @@ defmodule Horizon.StorageManager do
     {:ok, :deleted}
   end
 
-  def remove!(asset_id) do
+  def remove!(upload_id) do
     Repo.get!(
-      Asset,
-      asset_id
+      Upload,
+      upload_id
     )
     |> Repo.delete!()
 
     {:ok, :deleted}
   end
 
-  def burn!(asset_id) do
-    asset = Repo.get!(Asset, asset_id)
+  def burn!(upload_id) do
+    upload = Repo.get!(Upload, upload_id)
 
-    asset =
-      asset
-      |> Asset.changeset(%{
+    upload =
+      upload
+      |> Upload.changeset(%{
         status: :processing
       })
       |> Repo.update!()
 
     # start processing here
 
-    {:ok, asset}
+    {:ok, upload}
   end
 
   def download!(ash_id) do
-    {asset_id, sha256} = parse_ash_id(ash_id)
+    {upload_id, sha256} = parse_ash_id(ash_id)
 
-    blobs = Asset.get_asset_and_blobs(asset_id, sha256)
+    blobs = Upload.get_upload_and_blobs(upload_id, sha256)
 
     mirage_blob = Enum.find(blobs, fn a -> a.storage === :mirage end)
 
@@ -93,19 +93,19 @@ defmodule Horizon.StorageManager do
     end
   end
 
-  def get!(asset_id) do
-    case Repo.get(Asset, asset_id) do
+  def get!(upload_id) do
+    case Repo.get(Upload, upload_id) do
       nil -> nil
-      asset -> {:ok, asset}
+      upload -> {:ok, upload}
     end
   end
 
   def status(ash_id) do
     IO.inspect(ash_id)
 
-    {asset_id, sha256} = parse_ash_id(ash_id)
+    {upload_id, sha256} = parse_ash_id(ash_id)
 
-    blobs = Asset.get_asset_and_blobs(asset_id, sha256)
+    blobs = Upload.get_upload_and_blobs(upload_id, sha256)
 
     %{filename: filename, status: status} = List.first(blobs)
 
@@ -115,20 +115,20 @@ defmodule Horizon.StorageManager do
   defp parse_ash_id(ash_id) do
     IO.inspect(ash_id)
 
-    [asset_id, sha256] = String.split(ash_id, ".", parts: 2)
+    [upload_id, sha256] = String.split(ash_id, ".", parts: 2)
 
-    IO.inspect(asset_id)
+    IO.inspect(upload_id)
     IO.inspect(sha256)
 
-    {asset_id, _} = Integer.parse(asset_id)
+    {upload_id, _} = Integer.parse(upload_id)
 
-    IO.inspect(asset_id)
+    IO.inspect(upload_id)
 
     true = String.match?(sha256, ~r/[A-Fa-f0-9]{64}/)
 
     IO.inspect(sha256)
 
-    {asset_id, sha256}
+    {upload_id, sha256}
   end
 
   # Server (callbacks)
@@ -139,17 +139,17 @@ defmodule Horizon.StorageManager do
   end
 
   @impl true
-  def handle_cast({:process_asset, asset}, state) do
-    IO.inspect(asset, label: "process_asset")
+  def handle_cast({:process_upload, upload}, state) do
+    IO.inspect(upload, label: "process_upload")
 
-    asset =
+    upload =
       Repo.update!(
-        Asset.changeset(asset, %{
+        Upload.changeset(upload, %{
           status: :ok
         })
       )
 
-    IO.inspect(asset, label: "processed asset")
+    IO.inspect(upload, label: "processed upload")
 
     {:noreply, state}
   end

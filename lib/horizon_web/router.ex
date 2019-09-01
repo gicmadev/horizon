@@ -12,14 +12,14 @@ defmodule HorizonWeb.Router do
 
     get "/upload/new", UploadController, :new
 
-    get "/upload/:asset_id/ensure", UploadController, :ensure
+    get "/upload/:upload_id/ensure", UploadController, :ensure
 
-    post "/upload/:asset_id", UploadController, :upload
-    post "/upload/:asset_id/cancel", UploadController, :cancel
+    post "/upload/:upload_id", UploadController, :upload
+    post "/upload/:upload_id/cancel", UploadController, :cancel
 
-    post "/upload/:asset_id/burn", UploadController, :burn
-    get "/upload/:asset_id/status", UploadController, :status
+    post "/upload/:upload_id/burn", UploadController, :burn
+    get "/upload/:upload_id/status", UploadController, :status
 
-    get "/dl/:asset_id", DownloadController, :download
+    get "/dl/:upload_id", DownloadController, :download
   end
 end

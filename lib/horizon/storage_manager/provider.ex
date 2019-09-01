@@ -1,5 +1,5 @@
 defmodule Horizon.StorageManager.Provider do
-  alias Horizon.Schema.{Asset, Blob}
+  alias Horizon.Schema.{Upload, Blob}
 
   @doc """
   Returns storage provider codename
@@ -9,7 +9,7 @@ defmodule Horizon.StorageManager.Provider do
   @doc """
   Store file into storage provider
   """
-  @callback store!(file_path :: String.t(), %Asset{}) :: %Blob{}
+  @callback store!(file_path :: String.t(), %Upload{}) :: %Blob{}
 
   defmacro __using__(_) do
     quote do

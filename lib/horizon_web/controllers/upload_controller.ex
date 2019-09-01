@@ -6,22 +6,22 @@ defmodule HorizonWeb.UploadController do
   plug HorizonWeb.Plugs.VerifyToken
 
   def new(conn, _params) do
-    {:ok, asset} = Horizon.StorageManager.new!()
+    {:ok, upload} = Horizon.StorageManager.new!()
 
-    conn |> send_ok_data(%{id: asset.id})
+    conn |> send_ok_data(%{id: upload.id})
   end
 
-  def ensure(conn, %{"asset_id" => asset_id}) do
-    case Horizon.StorageManager.get!(asset_id) do
-      {:ok, asset} -> conn |> send_ok_data(%{id: asset.id})
-      nil -> conn |> send_ko_data(%{id: asset_id}, 404)
+  def ensure(conn, %{"upload_id" => upload_id}) do
+    case Horizon.StorageManager.get!(upload_id) do
+      {:ok, upload} -> conn |> send_ok_data(%{id: upload.id})
+      nil -> conn |> send_ko_data(%{id: upload_id}, 404)
     end
   end
 
-  def upload(conn, %{"asset_id" => asset_id, "file" => file}) do
-    {:ok, asset} = Horizon.StorageManager.store!(asset_id, file)
+  def upload(conn, %{"upload_id" => upload_id, "file" => file}) do
+    {:ok, upload} = Horizon.StorageManager.store!(upload_id, file)
 
-    conn |> send_ok_data(%{id: asset.id})
+    conn |> send_ok_data(%{id: upload.id})
   end
 
   def status(conn, %{"ash_id" => ash_id}) do
