@@ -12,6 +12,7 @@ defmodule Horizon.Schema.Upload do
   schema "uploads" do
     field :filename, :string, size: 512
     field :content_type, :string, size: 255, default: "application/octet-stream"
+    field :content_length, :integer
     field :sha256, :string, size: 64
 
     field :source, :string, size: 24
@@ -24,21 +25,49 @@ defmodule Horizon.Schema.Upload do
   end
 
   @doc false
-  def changeset(file, attrs) do
-    file
-    |> cast(attrs, [:filename, :content_type, :sha256, :status])
+  def new(attrs) do
+    %Upload{}
+    |> cast(attrs, [:source, :bucket, :owner])
+    |> set_status(:new)
+    |> validate_length(:source, min: 1, max: 24)
+    |> validate_length(:bucket, min: 1, max: 24)
+    |> validate_length(:owner, min: 1, max: 24)
+    |> validate_required([:source, :bucket, :owner])
+  end
+
+  @doc false
+  def reset(upload) do
+    upload
+    |> cast(%{filename: nil, content_type: nil, sha256: nil}, [:filename, :content_type, :sha256])
+    |> set_status(:new)
+  end
+
+  @doc false
+  def upload(upload, attrs) do
+    upload
+    |> cast(attrs, [:filename, :content_type, :content_length, :sha256])
+    |> set_status(:draft)
     |> validate_format(:sha256, ~r/[A-Fa-f0-9]{64}/)
     |> validate_length(:filename, min: 1, max: 512)
     |> validate_length(:content_type, min: 1, max: 255)
-    |> validate_required([:filename, :sha256, :content_type, :status])
+    |> validate_number(:content_length, greater_than: 0)
+    |> validate_required([:filename, :sha256, :content_type, :content_length])
   end
 
-  def get_upload_and_blobs(upload_id, sha256) do
+  @doc false
+  def write_metadata(upload, attrs) do
+    upload
+    |> cast(attrs, [:duration, :artwork])
+  end
+
+  defp set_status(upload, status), do: upload |> cast(%{status: status}, [:status])
+
+  def get_upload_and_blobs(upload_id) do
     Horizon.Repo.all(
       from(b in Blob,
         join: a in Upload,
         on: a.sha256 == b.sha256,
-        where: a.id == ^upload_id and a.sha256 == ^sha256,
+        where: a.id == ^upload_id,
         select: %{
           id: a.id,
           status: a.status,

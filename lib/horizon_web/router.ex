@@ -10,12 +10,15 @@ defmodule HorizonWeb.Router do
 
     get "/poc", DownloadController, :poc_download
 
-    get "/upload/new", UploadController, :new
-
-    get "/upload/:upload_id/ensure", UploadController, :ensure
+    post "/upload/new", UploadController, :new
 
     post "/upload/:upload_id", UploadController, :upload
-    post "/upload/:upload_id/cancel", UploadController, :cancel
+    options "/upload/:upload_id", UploadController, :options
+
+    get "/upload/:upload_id", UploadController, :get
+
+    delete "/upload/:upload_id/revert", UploadController, :revert
+    delete "/upload/:upload_id", UploadController, :delete
 
     post "/upload/:upload_id/burn", UploadController, :burn
     get "/upload/:upload_id/status", UploadController, :status

@@ -40,5 +40,6 @@ defmodule HorizonWeb.Endpoint do
     key: "_horizon_key",
     signing_salt: "ctg3Xeo1"
 
+  plug Corsica, origins: Application.get_env(:horizon, HorizonWeb.Endpoint)[:api_origins], log: [rejected: :error], allow_headers: ~w(authorization content-disposition), expose_headers: ~w(content-disposition)
   plug HorizonWeb.Router
 end

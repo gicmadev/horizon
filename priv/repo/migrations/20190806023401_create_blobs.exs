@@ -11,5 +11,7 @@ defmodule Horizon.Repo.Migrations.CreateResources do
 
       timestamps()
     end
+
+    create(unique_index(:blobs, [:sha256, :storage]))
   end
 end

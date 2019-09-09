@@ -15,25 +15,26 @@ config :horizon, HorizonWeb.Endpoint,
   ],
   code_reloader: true,
   check_origin: false,
-  watchers: []
+  watchers: [],
+  api_origins: [~r{^https?://(.*\.?)podcloud\.test$}]
 
 config :horizon, Horizon.SecureTokens,
   test: %{
     key: """
------BEGIN PUBLIC KEY-----
-MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAy957s+HNvODchwr0pDV+
-B5A33FaiJacsU52E/Z3yIZB/KUTh9ZXulYiPjryVBkitpOj86DBK9hwAvW3iRBP7
-OzneJDvzuGcbdJpx24JLxsHMEX8YYv5RrLqOgSjICY796TLbEHDUvv7uXypeQJ74
-JrtbYVJj87+avs7VTn3cIvzGialXd9tA16xP87Ew04xpTQfG21xNUZbru3mMxgmK
-7Xp1dT+EnJRJIKFYQMQ+DwJiR09SSDkLOF+jQf1KgOJkJEWDcp4kIMAkKih0zDJJ
-z4bt3JtyyYerPKrqAKpLC6ROogf0sHymxjl+ei+LVz0NlO4tS1YJCG5F9UOf6DIi
-+2a8kYKLRYsDliCNzgfb7/npNav5JlOsuCfxz4T4fjEmuMXdjcqcni7hxXmHh3fU
-0Pj2rbFg0Iosb1BTkA9+87dAnbyrtkpUPv0k2IKWW049uj21tw9yhon6C18zT1vm
-QvPanXJ1TohpbjIjXVcG0g3hwmZcvAm+HWJ1BQLsDInxdpLO6d0W7KI14hfwlCCq
-FRHZO6+pXpRTMveNcEwtuCEZTs4+KuvtqE8VztqitAGzXn3F/7F8wbrq27ikU5CK
-n7uHNwUA9hd/DzO8BTsoPSt+hR7UxUoxevOXDOguhv9ACsGemWtzoI4Rlo6CtRqG
-/v2o7+c9wdAbAsj6OrYAjPkCAwEAAQ==
------END PUBLIC KEY-----
+    -----BEGIN PUBLIC KEY-----
+    MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAy957s+HNvODchwr0pDV+
+    B5A33FaiJacsU52E/Z3yIZB/KUTh9ZXulYiPjryVBkitpOj86DBK9hwAvW3iRBP7
+    OzneJDvzuGcbdJpx24JLxsHMEX8YYv5RrLqOgSjICY796TLbEHDUvv7uXypeQJ74
+    JrtbYVJj87+avs7VTn3cIvzGialXd9tA16xP87Ew04xpTQfG21xNUZbru3mMxgmK
+    7Xp1dT+EnJRJIKFYQMQ+DwJiR09SSDkLOF+jQf1KgOJkJEWDcp4kIMAkKih0zDJJ
+    z4bt3JtyyYerPKrqAKpLC6ROogf0sHymxjl+ei+LVz0NlO4tS1YJCG5F9UOf6DIi
+    +2a8kYKLRYsDliCNzgfb7/npNav5JlOsuCfxz4T4fjEmuMXdjcqcni7hxXmHh3fU
+    0Pj2rbFg0Iosb1BTkA9+87dAnbyrtkpUPv0k2IKWW049uj21tw9yhon6C18zT1vm
+    QvPanXJ1TohpbjIjXVcG0g3hwmZcvAm+HWJ1BQLsDInxdpLO6d0W7KI14hfwlCCq
+    FRHZO6+pXpRTMveNcEwtuCEZTs4+KuvtqE8VztqitAGzXn3F/7F8wbrq27ikU5CK
+    n7uHNwUA9hd/DzO8BTsoPSt+hR7UxUoxevOXDOguhv9ACsGemWtzoI4Rlo6CtRqG
+    /v2o7+c9wdAbAsj6OrYAjPkCAwEAAQ==
+    -----END PUBLIC KEY-----
     """
   }
 

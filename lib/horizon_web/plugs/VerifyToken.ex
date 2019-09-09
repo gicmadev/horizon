@@ -22,7 +22,7 @@ defmodule HorizonWeb.Plugs.VerifyToken do
     end
   end
 
-  defp forbidden(conn, reason \\ nil) do
+  defp forbidden(conn, reason) do
     Logger.warn("Forbidden! Error verifying auth token. #{inspect(reason)}")
 
     conn
@@ -37,9 +37,9 @@ defmodule HorizonWeb.Plugs.VerifyToken do
 
     ash_id =
       if Phoenix.Controller.action_name(conn) === :new do
-        "new"
+        Map.get(conn.params, "source")
       else
-        Map.get(conn.params, "ash_id")
+        Map.get(conn.params, "upload_id")
       end
 
     claims =

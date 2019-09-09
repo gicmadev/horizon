@@ -20,6 +20,20 @@ services:
         traefik.frontend.priority: 999999
         traefik.port: 4000
 
+  storybook:
+    image: node:10
+    volumes:
+      - .:/app
+    networks:
+      - traefik
+      - podcloud
+    working_dir: /app
+    labels:
+        traefik.frontend.rule: "HostRegexp:sb.horizon.podcloud.test"
+        traefik.frontend.priority: 9999999
+        traefik.port: 6006
+    command: ["npm", "run", "storybook"]
+
   fake_s3:
     image: lphoward/fake-s3
     ports:

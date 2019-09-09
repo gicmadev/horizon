@@ -31,5 +31,9 @@ defmodule Horizon.Repo.Migrations.CreateFiles do
 
       timestamps()
     end
+
+    create(unique_index(:uploads, :source))
+    create(index(:uploads, :bucket))
+    create(index(:uploads, :owner))
   end
 end

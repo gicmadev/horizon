@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import { FilePond } from "react-filepond";
 
@@ -41,9 +41,80 @@ const useStyles = makeStyles({
   }
 });
 
-const UploaderBox = ({ item_id }) => {
+const serverConfig = (upload_id, token) => ({
+  url: process.env.REACT_APP_HORIZON_URL,
+  process: {
+    url: `/upload/${upload_id}`,
+    method: "POST",
+    withCredentials: false,
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    onload: response => JSON.parse(response).id
+  },
+  revert: {
+    url: `/upload/${upload_id}/revert`,
+    method: "DELETE",
+    withCredentials: false,
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  },
+  load: {
+    url: `/upload/`,
+    withCredentials: false,
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  },
+  remove: (source, load, error) => {
+    if (!source) return;
+
+    fetch([process.env.REACT_APP_HORIZON_URL, "upload", upload_id].join("/"), {
+      method: "DELETE",
+
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(result => result.json())
+      .then(
+        result => {
+          if (typeof result !== "object")
+            return error("Invalid server response");
+
+          if (result.errors) {
+            if (result.errors.detail === "Not Found") {
+              return load();
+            } else if (typeof result.errors.detail === "string") {
+              return error(result.errors.detail);
+            }
+          }
+
+          if (result.ok === true && result.deleted === true) return load();
+
+          return error("Invalid server response");
+        },
+        () => {
+          error("non lol");
+        }
+      );
+  },
+  fetch: null
+});
+
+const UploaderBox = ({ upload_id, token, uploaded }) => {
   const classes = useStyles();
   const [files, setFiles] = useState([]);
+
+  useEffect(
+    () =>
+      setFiles(
+        uploaded ? [{ source: upload_id, options: { type: "local" } }] : []
+      ),
+    [uploaded]
+  );
+  console.log(files);
 
   return (
     <>
@@ -60,16 +131,22 @@ const UploaderBox = ({ item_id }) => {
         <FilePond
           files={files}
           allowMultiple={false}
-          server="/api"
+          server={serverConfig(upload_id, token)}
           onupdatefiles={fileItems =>
             setFiles(fileItems.map(fileItem => fileItem.file))
+          }
+          name="horizon_file_upload"
+          beforeRemoveFile={() =>
+            confirm(
+              "Confirmez-vous la suppression du fichier ?\nCette action est irréversible."
+            )
           }
           {...uploaderPhrases}
         />
         <Typography align="right">
           <Link
             href={`https://podcloud.fr/contact?purpose=storage&bug=${encodeURIComponent(
-              JSON.stringify({ item_id, files })
+              JSON.stringify({ upload_id, token, files })
             )}`}
             target="_blank"
             variant="body2"

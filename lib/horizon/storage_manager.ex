@@ -1,6 +1,10 @@
 defmodule Horizon.StorageManager do
   use GenServer
 
+  require Logger
+
+  import Ecto.Query
+
   alias Horizon.StorageManager.Provider.{Mirage}
 
   alias Horizon.Repo
@@ -14,12 +18,18 @@ defmodule Horizon.StorageManager do
     )
   end
 
-  def new! do
-    Repo.insert(%Upload{status: :new})
+  def new!(params) do
+    upload = Upload.new(params)
+    Logger.debug("upload : #{inspect upload}")
+    Repo.insert(upload)
+  end
+
+  def upload_for_source(source) do
+    Repo.get_by(Upload, source: source)
   end
 
   def store!(upload_id, file) do
-    asset = Repo.get_by!(Upload, id: upload_id, status: :new)
+    upload = Repo.get_by!(Upload, id: upload_id, status: :new)
 
     sha256 = get_sha256(file.path)
     %{size: size} = File.stat!(file.path)
@@ -28,12 +38,11 @@ defmodule Horizon.StorageManager do
       Repo.transaction(fn ->
         upload =
           upload
-          |> Upload.changeset(%{
+          |> Upload.upload(%{
             filename: file.filename,
             content_type: MIME.from_path(file.filename),
             sha256: sha256,
-            size: size,
-            status: :draft
+            content_length: size
           })
           |> Repo.update!()
 
@@ -43,15 +52,14 @@ defmodule Horizon.StorageManager do
     {:ok, upload}
   end
 
-  def cancel!(upload_id) do
-    Repo.get_by!(
-      Upload,
-      id: upload_id,
-      status: :new
-    )
-    |> Repo.delete!()
+  def revert!(upload_id) do
+    from(u in Upload, where: u.id == ^upload_id and u.status in [^:new, ^:draft])
+    |> Repo.one!
+    |> Upload.reset
+    |> Repo.update!
 
-    {:ok, :deleted}
+
+    {:ok, :reverted}
   end
 
   def remove!(upload_id) do
@@ -59,7 +67,8 @@ defmodule Horizon.StorageManager do
       Upload,
       upload_id
     )
-    |> Repo.delete!()
+    |> Upload.reset
+    |> Repo.update!
 
     {:ok, :deleted}
   end
@@ -79,10 +88,8 @@ defmodule Horizon.StorageManager do
     {:ok, upload}
   end
 
-  def download!(ash_id) do
-    {upload_id, sha256} = parse_ash_id(ash_id)
-
-    blobs = Upload.get_upload_and_blobs(upload_id, sha256)
+  def download!(upload_id) do
+    blobs = Upload.get_upload_and_blobs(upload_id)
 
     mirage_blob = Enum.find(blobs, fn a -> a.storage === :mirage end)
 

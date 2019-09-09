@@ -48,7 +48,8 @@ defmodule Horizon.MixProject do
       {:httpoison, "~> 1.5"},
       {:mime, "~> 1.2"},
       {:joken, "~> 2.0"},
-      {:jose, "~> 1.9"}
+      {:jose, "~> 1.9"},
+      {:corsica, "~> 1.0"}
     ]
   end
 
