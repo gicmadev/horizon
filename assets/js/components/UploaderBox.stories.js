@@ -11,6 +11,6 @@ storiesOf("UploaderBox", module)
     <UploaderBox
       upload_id={text("Upload ID")}
       token={text("Upload JWT Token")}
-      uploaded={boolean("Already uploaded")}
+      url={text("Known URL")}
     />
   ));

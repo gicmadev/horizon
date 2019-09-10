@@ -101,10 +101,9 @@ defmodule Horizon.StorageManager do
   end
 
   def get!(upload_id) do
-    case Repo.get(Upload, upload_id) do
-      nil -> nil
-      upload -> {:ok, upload}
-    end
+    upload = from(u in Upload, where: u.id == ^upload_id and u.status != ^:new) |> Repo.one!
+
+    {:ok, upload}
   end
 
   def status(ash_id) do
