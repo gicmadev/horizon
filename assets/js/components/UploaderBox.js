@@ -48,6 +48,8 @@ const useStyles = makeStyles({
   }
 });
 
+let delete_on_server = null;
+
 const serverConfig = (upload_id, token) => ({
   url: process.env.REACT_APP_HORIZON_URL,
   process: {
@@ -74,8 +76,15 @@ const serverConfig = (upload_id, token) => ({
       Authorization: `Bearer ${token}`
     }
   },
-  remove: (source, load, error) => {
-    if (!source) return;
+  remove: (server_id, load, error) => {
+    // If source is undefined (error'd file) or
+    // if we havn't confirmed deletion with user,
+    // we just call load to continue removing file on client side only
+    if (!server_id || server_id !== delete_on_server) return load();
+
+    // If deletion has been user confirmed, we delete file on server,
+    // and reset the variable
+    delete_on_server = null;
 
     fetch([process.env.REACT_APP_HORIZON_URL, "upload", upload_id].join("/"), {
       method: "DELETE",
@@ -179,21 +188,40 @@ const UploaderBox = ({ upload_id, token, url }) => {
                   setHorizonUrl("");
                   setFiles([]);
                 }
-                console.log("onupdatefiles");
               }}
               onprocessfile={(error, file) => {
                 if (file.status === FileStatus.PROCESSING_COMPLETE) {
                   setHorizonUrl(`horizon://${file.serverId}`);
                   setFileUploaded(file.serverId);
                 }
-                console.log("onprocessfile");
               }}
               name="horizon_file_upload"
-              beforeRemoveFile={() =>
-                confirm(
-                  "Confirmez-vous la suppression du fichier ?\nCette action est irréversible."
+              beforeRemoveFile={obj => {
+                // We allow removing of the file if it errored out
+                if (
+                  [
+                    FileStatus.LOAD_ERROR,
+                    FileStatus.PROCESSING_ERROR,
+                    FileStatus.PROCESSING_REVERT_ERROR
+                  ].includes(obj.status)
                 )
-              }
+                  return true;
+
+                // If file is fully loaded, we ask for confirmation before remove
+                if (
+                  confirm(
+                    "Confirmez-vous la suppression du fichier ?\nCette action est irréversible."
+                  )
+                ) {
+                  // We set this variable to be sure deletion has been confirmed
+                  delete_on_server = obj.serverId;
+
+                  return true;
+                }
+
+                // We stop the deletion process with false if it hasn't been confirmed
+                return false;
+              }}
               {...uploaderPhrases}
             />
             <input
@@ -229,6 +257,14 @@ const UploaderBox = ({ upload_id, token, url }) => {
       ) : (
         <>
           <Box className={classes.inputsBox}>
+            {horizonUrl.length ? (
+              <Box bgcolor="error.main" color="white" p={2} m={2}>
+                <Typography variant="body2" align="justify">
+                  Attention, vous avez un fichier associé à votre publication.
+                  Il sera supprimé du stockage si vous sauvegardez maintenant.
+                </Typography>
+              </Box>
+            ) : null}
             <TextField
               label="URL de votre média"
               placeholder="https://archive.org/download/MonPodcast/MonPodcast32.mp3"
@@ -240,7 +276,7 @@ const UploaderBox = ({ upload_id, token, url }) => {
                 shrink: true
               }}
               value={onlineUrl}
-              onChange={setOnlineUrl}
+              onChange={ev => setOnlineUrl(ev.target.value)}
             />
           </Box>
           <Box className={classes.contentBox}>
