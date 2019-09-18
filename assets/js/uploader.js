@@ -1,13 +1,11 @@
-import '../css/app.css';
+import React from "react";
+import ReactDOM from "react-dom";
 
-import React from 'react';
-import ReactDOM from 'react-dom';
+import UploaderBox from "./components/UploaderBox";
 
-import UploaderBox from './components/UploaderBox';
-
-window.loadHorizonUploader = (element) => {
-    if(window.loadedHorizonUploader) return;
-
-    window.loadedHorizonUploader = true;
-    ReactDOM.render(<UploaderBox />, element);
-}
+window.loadHorizonUploader = (element, upload_id, token, url) => {
+  ReactDOM.render(
+    <UploaderBox upload_id={upload_id} token={token} url={url} />,
+    element
+  );
+};

@@ -31,19 +31,41 @@ defmodule Horizon.StorageManager do
   def store!(upload_id, file) do
     upload = Repo.get_by!(Upload, id: upload_id, status: :new)
 
+    new_path = "#{file.path}-#{file.filename}"
+    File.rename!(file.path, new_path)
+    file = %{file | path: new_path}
+
     sha256 = get_sha256(file.path)
     %{size: size} = File.stat!(file.path)
+
+    upload_data = %{
+            filename: file.filename,
+            content_type: MIME.from_path(file.filename),
+            sha256: sha256,
+            content_length: size,
+          }
+
+
+    upload_data = case Taglib.new(file.path) do
+      {:ok, tags} -> 
+        Logger.debug("Hey ho #{inspect Taglib.props(tags)}")
+        Map.merge(upload_data, %{
+          duration: Taglib.duration(tags),
+          artwork: case Taglib.artwork(tags) do
+            {mimetype, binart} -> "data:#{mimetype};base64,#{Base.encode64(binart)}"
+            _ -> nil
+          end
+        })
+      eh -> 
+        Logger.debug("Hey hey #{inspect eh}")
+        upload_data
+    end
 
     {:ok, _} =
       Repo.transaction(fn ->
         upload =
           upload
-          |> Upload.upload(%{
-            filename: file.filename,
-            content_type: MIME.from_path(file.filename),
-            sha256: sha256,
-            content_length: size
-          })
+          |> Upload.upload(upload_data)
           |> Repo.update!()
 
         Mirage.store!(file, upload)

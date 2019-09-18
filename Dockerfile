@@ -5,6 +5,10 @@ VOLUME /var/run/.mix
 EXPOSE 4000
 ENV MIX_HOME=/var/run/.mix
 
+RUN apt-get update \
+    && apt-get -y --no-install-recommends install libtag1-dev \
+    && apt-get purge -y --auto-remove
+
 WORKDIR /app
 
 CMD ["mix", "phx.server"]
@@ -39,7 +43,7 @@ RUN cp -vr _build/dev/rel/$APP_NAME /tmp/release;
 # included by erlang included by elixir:1.8-alpine
 FROM alpine:3.9 as podcloud-horizon
 
-RUN apk update && apk add --no-cache bash openssl
+RUN apk update && apk add --no-cache bash openssl libtag
 
 ENV MIX_ENV prod
 ENV LANG C.UTF-8

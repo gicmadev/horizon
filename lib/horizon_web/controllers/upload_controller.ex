@@ -2,8 +2,8 @@ defmodule HorizonWeb.UploadController do
   use HorizonWeb, :controller
   require Logger
 
-  plug HorizonWeb.Plugs.RemoveTimeout
-  plug HorizonWeb.Plugs.VerifyToken
+  plug(HorizonWeb.Plugs.RemoveTimeout)
+  plug(HorizonWeb.Plugs.VerifyToken)
 
   def new(conn, params) do
     upload =
@@ -49,19 +49,18 @@ defmodule HorizonWeb.UploadController do
     {:ok, upload} = Horizon.StorageManager.get!(upload_id)
 
     conn
-    |> put_resp_content_type(upload.content_type, nil)
-    |> put_resp_header("content-disposition", ~s[attachment; filename="#{
-      upload.filename |> String.replace(~s("), ~s(\"))
-    }"])
-    |> put_resp_header("content-length", Integer.to_string(upload.content_length))
-    |> send_upload(upload)
+    |> send_ok_data(%{
+      name: upload.filename,
+      size: upload.content_length,
+      type: upload.content_type
+    })
   end
 
   defp send_upload(conn, upload) do
-  case Horizon.StorageManager.download!(upload.id) do
-    {:downloaded, file_path} -> conn |> Plug.Conn.send_file(200, file_path)
+    case Horizon.StorageManager.download!(upload.id) do
+      {:downloaded, file_path} -> conn |> Plug.Conn.send_file(200, file_path)
+    end
   end
-end
 
   def status(conn, %{"ash_id" => ash_id}) do
     status = Horizon.StorageManager.status(ash_id)

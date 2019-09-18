@@ -49,7 +49,8 @@ defmodule Horizon.MixProject do
       {:mime, "~> 1.2"},
       {:joken, "~> 2.0"},
       {:jose, "~> 1.9"},
-      {:corsica, "~> 1.0"}
+      {:corsica, "~> 1.0"},
+      {:taglib, "~> 0.2"}
     ]
   end
 

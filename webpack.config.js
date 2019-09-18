@@ -27,8 +27,9 @@ module.exports = (env, options) => ({
         }
       },
       {
-        test: /\.css$/,
-        use: ["css-loader"]
+        test: /\.css$/i,
+        exclude: /\.lazy\.css$/i,
+        use: ["style-loader", "css-loader"]
       }
     ]
   },

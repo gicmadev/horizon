@@ -16,6 +16,9 @@ defmodule Horizon.Schema.Upload do
     field :content_length, :integer
     field :sha256, :string, size: 64
 
+    field :duration, :integer
+    field :artwork, :binary
+
     field :source, :string, size: 24
     field :bucket, :string, size: 24
     field :owner, :string, size: 24
@@ -46,7 +49,7 @@ defmodule Horizon.Schema.Upload do
   @doc false
   def upload(upload, attrs) do
     upload
-    |> cast(attrs, [:filename, :content_type, :content_length, :sha256])
+    |> cast(attrs, [:filename, :content_type, :content_length, :sha256, :duration, :artwork])
     |> set_status(:draft)
     |> validate_format(:sha256, ~r/[A-Fa-f0-9]{64}/)
     |> validate_length(:filename, min: 1, max: 512)

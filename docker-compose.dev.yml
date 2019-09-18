@@ -30,7 +30,7 @@ services:
     working_dir: /app
     labels:
         traefik.frontend.rule: "HostRegexp:sb.horizon.podcloud.test"
-        traefik.frontend.priority: 9999999
+        traefik.frontend.priority: 999999
         traefik.port: 6006
     command: ["npm", "run", "storybook"]
 
