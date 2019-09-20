@@ -15,7 +15,7 @@ import useUploaderPhrases from "./Uploader.intl";
 import useUploaderConfig from "./Uploader.config";
 
 const Uploader = props => {
-  const { upload_id, token, horizonUrl, files, toggleMode } = props;
+  const { uploadId, token, horizonUrl, files, toggleMode } = props;
 
   return (
     <ContentBox>
@@ -39,7 +39,7 @@ const Uploader = props => {
         <Typography align="right">
           <Link
             href={`https://podcloud.fr/contact?purpose=storage&bug=${encodeURIComponent(
-              JSON.stringify({ upload_id, token, files })
+              JSON.stringify({ uploadId, token, files })
             )}`}
             target="_blank"
             variant="body2"

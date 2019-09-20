@@ -20,6 +20,17 @@ services:
         traefik.frontend.priority: 999999
         traefik.port: 4000
 
+  webpack:
+    image: node:10
+    volumes:
+      - .:/app
+    networks:
+      - podcloud
+    working_dir: /app
+    labels:
+        traefik.enabled: false
+    command: ["npm", "run", "watch"]
+
   storybook:
     image: node:10
     volumes:

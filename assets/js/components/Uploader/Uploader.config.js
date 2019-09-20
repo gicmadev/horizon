@@ -16,7 +16,8 @@ const FakeBlob = class extends Blob {
 };
 
 const useUploaderConfig = ({
-  upload_id,
+  serverUrl,
+  uploadId,
   token,
   files,
   setHorizonUrl,
@@ -30,9 +31,9 @@ const useUploaderConfig = ({
     files: files,
     name: "horizon_file_upload",
     server: {
-      url: process.env.REACT_APP_HORIZON_URL,
+      url: server,
       process: {
-        url: `/upload/${upload_id}`,
+        url: `/upload/${uploadId}`,
         method: "POST",
         withCredentials: false,
         headers: {
@@ -41,7 +42,7 @@ const useUploaderConfig = ({
         onload: response => JSON.parse(response).id
       },
       revert: {
-        url: `/upload/${upload_id}/revert`,
+        url: `/upload/${uploadId}/revert`,
         method: "DELETE",
         withCredentials: false,
         headers: {
@@ -54,15 +55,12 @@ const useUploaderConfig = ({
         const controller = new AbortController();
         const signal = controller.signal;
 
-        fetch(
-          [process.env.REACT_APP_HORIZON_URL, "upload", server_id].join("/"),
-          {
-            signal,
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+        fetch([serverUrl, "upload", server_id].join("/"), {
+          signal,
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-        )
+        })
           .then(resp => resp.json())
           .then(
             body =>
@@ -89,16 +87,13 @@ const useUploaderConfig = ({
         // and reset the variable
         delete_on_server = null;
 
-        fetch(
-          [process.env.REACT_APP_HORIZON_URL, "upload", upload_id].join("/"),
-          {
-            method: "DELETE",
+        fetch([serverUrl, "upload", uploadId].join("/"), {
+          method: "DELETE",
 
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-        )
+        })
           .then(result => result.json())
           .then(
             result => {

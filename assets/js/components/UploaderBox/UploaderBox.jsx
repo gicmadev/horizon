@@ -5,7 +5,7 @@ import Uploader from "../Uploader";
 import RemoteURL from "../RemoteURL";
 
 const UploaderBox = props => {
-  const { upload_id, token, url } = props;
+  const { serverUrl, uploadId, token, url } = props;
 
   const [files, setFiles] = useState([]);
   const [mode, setMode] = useState("upload");
@@ -15,16 +15,16 @@ const UploaderBox = props => {
 
   const toggleMode = () => setMode(mode === "upload" ? "online" : "upload");
 
-  const setFileUploaded = upload_id =>
-    setFiles([{ source: upload_id, options: { type: "local" } }]);
+  const setFileUploaded = uploadId =>
+    setFiles([{ source: uploadId, options: { type: "local" } }]);
 
   useEffect(() => {
     if (typeof url === "string") {
-      if (url == `horizon://${upload_id}`) {
+      if (url == `horizon://${uploadId}`) {
         setOnlineUrl("");
         setHorizonUrl(url);
         setMode("upload");
-        setFileUploaded(upload_id);
+        setFileUploaded(uploadId);
         console.log("already uploaded");
       } else if (/^https?:\/\/.+/.test(url)) {
         setOnlineUrl(url);
@@ -49,7 +49,8 @@ const UploaderBox = props => {
       />
       {mode === "upload" ? (
         <Uploader
-          upload_id={upload_id}
+          serverUrl={serverUrl}
+          uploadId={uploadId}
           token={token}
           horizonUrl={horizonUrl}
           files={files}
