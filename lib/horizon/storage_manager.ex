@@ -96,30 +96,27 @@ defmodule Horizon.StorageManager do
   end
 
   def burn!(upload_id) do
-    upload = Repo.get!(Upload, upload_id)
+    Repo.get!(Upload, upload_id)
+    |> Upload.burn()
+    |> Repo.update!
 
-    upload =
-      upload
-      |> Upload.changeset(%{
-        status: :processing
-      })
-      |> Repo.update!()
-
-    # start processing here
-
-    {:ok, upload}
+    {:ok, :burnt}
   end
 
   def download!(upload_id) do
-    blobs = Upload.get_upload_and_blobs(upload_id)
+    case Upload.get_upload_and_blobs(upload_id) do
+      [] -> nil
 
-    mirage_blob = Enum.find(blobs, fn a -> a.storage === :mirage end)
+      blobs ->
+        mirage_blob = Enum.find(blobs, fn a -> a.storage === :mirage end)
 
-    if mirage_blob !== nil do
-      {:downloaded, Mirage.get_blob_path(mirage_blob)}
-    else
-      raise "not yet implemented"
+        if mirage_blob !== nil do
+          {:downloaded, Mirage.get_blob_path(mirage_blob)}
+        else
+          raise "not yet implemented"
+        end
     end
+
   end
 
   def get!(upload_id) do
@@ -128,35 +125,12 @@ defmodule Horizon.StorageManager do
     {:ok, upload}
   end
 
-  def status(ash_id) do
-    IO.inspect(ash_id)
-
-    {upload_id, sha256} = parse_ash_id(ash_id)
-
-    blobs = Upload.get_upload_and_blobs(upload_id, sha256)
+  def status(upload_id) do
+    blobs = Upload.get_upload_and_blobs(upload_id)
 
     %{filename: filename, status: status} = List.first(blobs)
 
     %{filename: filename, status: status, storages: Enum.map(blobs, fn a -> a.storage end)}
-  end
-
-  defp parse_ash_id(ash_id) do
-    IO.inspect(ash_id)
-
-    [upload_id, sha256] = String.split(ash_id, ".", parts: 2)
-
-    IO.inspect(upload_id)
-    IO.inspect(sha256)
-
-    {upload_id, _} = Integer.parse(upload_id)
-
-    IO.inspect(upload_id)
-
-    true = String.match?(sha256, ~r/[A-Fa-f0-9]{64}/)
-
-    IO.inspect(sha256)
-
-    {upload_id, sha256}
   end
 
   # Server (callbacks)
@@ -164,22 +138,6 @@ defmodule Horizon.StorageManager do
   @impl true
   def init(state) do
     {:ok, state}
-  end
-
-  @impl true
-  def handle_cast({:process_upload, upload}, state) do
-    IO.inspect(upload, label: "process_upload")
-
-    upload =
-      Repo.update!(
-        Upload.changeset(upload, %{
-          status: :ok
-        })
-      )
-
-    IO.inspect(upload, label: "processed upload")
-
-    {:noreply, state}
   end
 
   defp get_sha256(file_path) do

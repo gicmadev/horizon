@@ -52,7 +52,9 @@ defmodule HorizonWeb.UploadController do
     |> send_ok_data(%{
       name: upload.filename,
       size: upload.content_length,
-      type: upload.content_type
+      type: upload.content_type,
+      duration: upload.duration,
+      artwork: upload.artwork,
     })
   end
 
@@ -66,6 +68,14 @@ defmodule HorizonWeb.UploadController do
     status = Horizon.StorageManager.status(ash_id)
 
     conn |> send_ok_data(%{status: status})
+  end
+
+  def burn(conn, %{"upload_id" => upload_id}) do
+    Logger.debug("upload_id : #{upload_id}")
+
+    {:ok, :burnt} = Horizon.StorageManager.burn!(upload_id)
+
+    conn |> send_ok_data(%{burnt: true})
   end
 
   defp send_ok_data(conn, data \\ %{}, status \\ 200) do

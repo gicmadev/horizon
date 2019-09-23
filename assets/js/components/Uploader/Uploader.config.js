@@ -31,7 +31,7 @@ const useUploaderConfig = ({
     files: files,
     name: "horizon_file_upload",
     server: {
-      url: server,
+      url: serverUrl,
       process: {
         url: `/upload/${uploadId}`,
         method: "POST",

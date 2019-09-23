@@ -4,51 +4,21 @@ defmodule HorizonWeb.DownloadController do
   alias Horizon.StorageManager
   alias Horizon.DownloadManager.DownloadStream
 
-  def download(conn, %{ash_id: ash_id}) do
-    disable_timeout(conn)
+  import Logger
 
-    case Horizon.StorageManager.download!(ash_id) do
+  plug(HorizonWeb.Plugs.RemoveTimeout)
+
+  def download(conn, params) do
+    %{"upload_id" => upload_id} = params
+    case Horizon.StorageManager.download!(upload_id) do
       {:downloaded, file_path} ->
         send_file_from_path(conn, file_path)
 
       {:downloading, download_stream} ->
         send_file_from_download_stream(conn, download_stream)
+
+      nil -> conn |> send_resp(404, "File not found")
     end
-  end
-
-  def poc_download(conn, _params) do
-    file = %{
-      url: "https://podshows.download/p2p/video/P2P37.mp4",
-      content_type: "video/mp4",
-      content_length: 491_768_935
-    }
-
-    conn =
-      conn
-      |> put_resp_content_type(file.content_type)
-      |> put_resp_header("content-length", Integer.to_string(file.content_length))
-
-    disable_timeout(conn)
-
-    case Horizon.DownloadManager.ensure_downloaded(file.url, file.content_length) do
-      {:downloaded, path} ->
-        send_file_from_path(conn, path)
-
-      {:downloading, download_stream} ->
-        send_file_from_download_stream(conn, download_stream)
-    end
-  end
-
-  defp disable_timeout(conn) do
-    {Plug.Cowboy.Conn, %{pid: pid, streamid: streamid}} = conn.adapter
-
-    Kernel.send(
-      pid,
-      {
-        {pid, streamid},
-        {:set_options, %{idle_timeout: :infinity}}
-      }
-    )
   end
 
   defp send_file_from_path(conn, file_path) do

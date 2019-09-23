@@ -60,6 +60,12 @@ defmodule Horizon.Schema.Upload do
   end
 
   @doc false
+  def burn(upload) do
+    upload
+    |> set_status(:ok)
+  end
+
+  @doc false
   def write_metadata(upload, attrs) do
     upload
     |> cast(attrs, [:duration, :artwork])
@@ -81,7 +87,7 @@ defmodule Horizon.Schema.Upload do
       from(b in Blob,
         join: a in Upload,
         on: a.sha256 == b.sha256,
-        where: a.id == ^upload_id,
+        where: a.id == ^upload_id and a.status == ^:ok,
         select: %{
           id: a.id,
           status: a.status,
