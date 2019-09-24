@@ -1,0 +1,30 @@
+language: minimal
+sudo: false
+env:
+  global:
+  - COMMIT=${TRAVIS_COMMIT::8}
+  - secure: C/IxqHel+Me4v8lfNMiT1yaNwgHyVARJ/0LJNBKMpgIjNVfweEwZbxs/Ze6ugdGtRkdbXfx5/PoIFOFCbVuftN4auolbQy1JX/SZgw0ehpIVPpHq1qt49C5LsNBr7jQZrSBdHI67ouV5S/XI1n1Sk/YymaJJvXa95gKJGSGZLPbDv9wZY6TqPZxaCsQXCHN0nzRVaayQNllUUVpRfa/4eKYG4SAEGxu6NIk6dlCbVCrvfn2LZYK5p4VvBM6puyTopGCx+wucKqTIuLLYVsXC7wevJSkygGfT4tyEz8HxNLBV/W/OcynO86a+aYZPqZhuLSMSy+HKMduuHxhJLoVDcb/4qE/toNm5AMFaGyeaT/oR5/yeHlhtLVW6m2GT701Ae4OHuZK5RI97bR1ixQrdZCaINzANPWoEj9VStx86jCO+OhdNd2FmNi77mKzme0g4HkCJQhsCJfExoCkHZWGo4HfQh85v7+eewaBcn0ranGsM+UmO7r4w7fI/B/ixoP6AojfXsjnvV40R+T0zgSmsBwIydpcdUYPPnQJn5xbaSEFh25UXY7tqxtm3RUbr3vgD9FOOujI7Lcn1FDMGGQbMuc8dZQIgpD9UcuN5ClwK8wjNv1N3w7lnoNNh8XgW9hXIjvTxOv7k/5p8Vp/vuXEw6rzdFkvOkdH18m70j98C11k=
+  - secure: ISNTwomxF6qbcHAcJ7nP6UvOuFt3BtYpEAui+IocwwIbtLBFu5mPFI9Nw7CJ4o8jceC4nIicF0JBLF/KTvzxc+0zel2Rua+xb+1ERVo1lKftaBw9tfpFjHTxqrtVbWs7HP+wOHojdnu0vl/S9zXPMRpzyLXkv5RqArCx135bLT+tThq/G6eJUZAvuOGyaIJDm9ccbgRj9OK7z+x5PqWokmqtHZp7DL0j1x0RhWvIg8LjAkxRd6sPvx40vbnoun4Tfrs4ttLdGoWBYl10YOgWn+Kjzsq4Ok7HMiOViDB88J3ggDiBPY+uyvGvNMYMSjIm6/hk88VCKfNFLsYTDwdnYxk0lLaYCwijUD9QZL5bVgLSDBzBAO6Sqwz4olNAQ2OBOnutKuTM+T3KrK7CQqe226J6MSpsccZyOEzOw0R3yklMLn8djcAKlP7mB41wHxX7UwjZU/X6XzaZoXIhe7d4q1dAGtVkfQcLnAS3duBhmHzb4u4PTDLqh7kXWSatnI1bLk9SnIyuytyrmBLpzggi43WMhmZIpGpr8QCsGmXLA/j3N6WXu2TgMn4B1H5IWJ3i8b94RgT+igo0rH+GXUlVyRoZjKYG5L4r85KMg3V2SUI80JcA05tR1fIZ9KSiT5PCNGrBhcrUGuXMNI/FWryiR1ZZsiFEf2z+VD278ZLp7KA=
+  - secure: mpeuje18ooKUS4qon13YttoRL0Alu5iXRF7y2XWBCb+qtFQItQtA1owkeUslB7R0lFfvNsChdhdAnSe4I9VS8CX4ryhXqMBFHoGyGkyPFWq4aHbvga8kRthIa79SjBxXW7HkxKAwpQud9MAJHnxG/RBJdANqfZzf1xkSCW3YrsOz5FN+kD01YHFl8rL9HramylPw3qVTR9MIU8SiAO/dgFortuwmb/qi3gVhTTF7SYjKw83MVDyNX25JZHFoGcl7ibUnUfEcTZJlF2ZQkTljHFc68IT9ExatnOrCbIHi8MEAUg2wOEg4uFkLtQutHfXHTxQqk/jy9Qdz+DzXMlBxAZluqvH+9V8AuNcXkqn7jvVlR/B28zmEJqMBD/gwdZF1iweoZslYzksCtljEC3kKJhyrho0KLLj20rGWgHhtunIJgjP7z59GhseDgt07pLvw14hkWhwwzYrlH0eW+pxU+w6VF0pgHH+/DYz69kHEQD1+GeMiDQeJPSXC7pmnefaLzcpRtlqLnDSKPy7EpNT8rnK9EV1NIryqa871e86M94TVTVbxBuJtw4BwfanFkM6uSZk5sXq2cydu8aJAPhEUOTS9R+CPT7xu4Dc6nXzAe3SANQ1tToURKN39W5+Ys3MRNrHqeGZVTvchscRr7K7/Aj5/At0mla8oiSShVwDB5OI=
+script:
+- docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+- export REPO=gicmadev/horizon
+- export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH
+  ; fi`
+- docker build -f Dockerfile -t $REPO:$COMMIT .
+- docker tag $REPO:$COMMIT $REPO:$TAG
+- docker tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+- docker push $REPO
+before_deploy:
+- eval "$(ssh-agent -s)"
+- openssl aes-256-cbc -K $encrypted_9fe265222b33_key -iv $encrypted_9fe265222b33_iv
+  -in .deploy_key.enc -out /tmp/deploy_key -d
+- chmod 600 /tmp/deploy_key
+- ssh-add /tmp/deploy_key
+- ssh-keyscan "$SERVER" >> ~/.ssh/known_hosts
+deploy:
+- provider: script
+  script: "./deploy.sh"
+  on:
+    branch: master
+before_install:
