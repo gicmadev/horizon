@@ -48,8 +48,6 @@ defmodule Horizon.StorageManager do
 
     upload_data = case Taglib.new(file.path) do
       {:ok, tags} -> 
-        Logger.debug("Hey ho #{inspect tags}")
-        Logger.debug("Hey ho #{inspect Taglib.props(tags)}")
         Map.merge(upload_data, %{
           duration: Taglib.duration(tags),
           artwork: case Taglib.artwork(tags) do
