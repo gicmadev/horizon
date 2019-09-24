@@ -33,7 +33,7 @@ set -e
 echo "Launching release"
 cd $BASE/releases/$RELEASEN
 
-mv docker-compose.production.yml docker-compose.yml
+mv docker-compose.prod.yml docker-compose.yml
 
 echo "Linking shared data"
 ln -nfs $BASE/shared/downloads $BASE/releases/$RELEASEN/
