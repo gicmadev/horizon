@@ -1,9 +1,7 @@
-FROM elixir:1.9.1 as runner
-
-VOLUME /var/run/.mix
+FROM elixir:1.9 as runner
 
 EXPOSE 4000
-ENV MIX_HOME=/var/run/.mix
+ENV MIX_HOME=/.mix
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install libtag1-dev \
@@ -13,44 +11,48 @@ WORKDIR /app
 
 CMD ["mix", "phx.server"]
 
-FROM runner as builder
+FROM node as node-builder
+
+WORKDIR /app
+
+COPY package*.json /app/
+RUN npm install
+
+COPY ./assets /app/assets
+COPY .babelrc /app/
+COPY ./webpack.config.js /app
+
+RUN npm run deploy
+
+FROM runner as horizon
 
 ADD mix.exs .
 ADD mix.lock .
 
-ENV MIX_ENV prod
+ENV MIX_ENV=prod
+ENV LANG=C.UTF-8
 
 RUN mix local.rebar --force
 
-RUN mix local.hex --if-missing --force
+RUN mix local.hex --force
 
 RUN mix deps.get --only prod
 
 RUN mix deps.compile
-ENV MIX_ENV prod
-RUN mix local.hex --if-missing --force
+
+COPY --from=node-builder /app/priv/static/js /app/priv/static/js
 
 WORKDIR /app
 
 ADD . .
-RUN mix compile
-RUN mix release
 
-ARG APP_NAME=horizon
-RUN cp -vr _build/dev/rel/$APP_NAME /tmp/release;
+RUN useradd app
 
-# now run the release.  Make sure the alpine version below matches the alpine version
-# included by erlang included by elixir:1.8-alpine
-FROM alpine:3.9 as podcloud-horizon
+RUN chown -R app: /app
 
-RUN apk update && apk add --no-cache bash openssl libtag
+USER app
 
-ENV MIX_ENV prod
-ENV LANG C.UTF-8
+EXPOSE 4000
 
-COPY --from=builder /release /app
-
-EXPOSE 80
-
-ARG APP_NAME=horizon
-ENTRYPOINT ["/app/bin/$APP_NAME", "start"]
+ENTRYPOINT ["mix"]
+CMD ["phx.server"]

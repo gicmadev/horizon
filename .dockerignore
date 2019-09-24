@@ -1,0 +1,12 @@
+*
+!mix.exs
+!mix.lock
+!lib
+!priv
+!config
+
+!assets
+!package.json
+!package-lock.json
+!webpack.config.js
+!.babelrc

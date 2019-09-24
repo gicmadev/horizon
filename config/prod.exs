@@ -10,8 +10,14 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :horizon, HorizonWeb.Endpoint,
-  http: [:inet6, port: System.get_env("PORT") || 4000],
-  url: [host: "localhost", port: 80]
+  http: [
+    :inet6, 
+    port: System.get_env("PORT") || 4000,
+    protocol_options: [
+        idle_timeout: 2_000
+    ]
+  ],
+  api_origins: [~r{^https?://(.*\.?)podcloud\.fr$}]
 
 # Do not print debug messages in production
 config :logger, level: :info

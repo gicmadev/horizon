@@ -1,0 +1,21 @@
+# project_name=gicma-horizon
+version: "3.4"
+services:
+  horizon:
+    image: gicmadev/horizon
+    build: .
+    volumes:
+      - ./downloads:/downloads
+      - ./prod.secret.exs:/app/config/prod.secret.exs
+    networks:
+      - traefik
+      - horizon
+    labels:
+        traefik.frontend.rule: "HostRegexp:horizon.gicma.dev"
+        traefik.port: 4000
+
+networks:
+  traefik:
+    external: true
+  horizon:
+    external: true
