@@ -22,16 +22,25 @@ defmodule HorizonWeb.DownloadController do
   end
 
   defp send_file_from_path(conn, file_path) do
-    offset = get_offset(conn.req_headers)
-
     %{size: file_size} = File.stat!(file_path)
 
-    conn
-    |> put_resp_header(
-      "content-range",
-      "bytes #{offset}-#{file_size - 1}/#{file_size}"
-    )
-    |> send_file(206, file_path, offset, file_size - offset)
+    case get_offset(conn.req_headers) do
+      nil ->
+        conn
+        |> put_resp_header(
+          "Accept-Ranges",
+          "bytes"
+        )
+        |> send_file(200, file_path)
+
+      offset ->
+        conn
+        |> put_resp_header(
+          "content-range",
+          "bytes #{offset}-#{file_size - 1}/#{file_size}"
+        )
+        |> send_file(206, file_path, offset, file_size - offset)
+    end
   end
 
   def send_file_from_download_stream(conn, download_stream) do
@@ -51,8 +60,7 @@ defmodule HorizonWeb.DownloadController do
       {"range", "bytes=" <> start_pos} ->
         String.split(start_pos, "-") |> hd |> String.to_integer()
 
-      nil ->
-        0
+      nil -> nil
     end
   end
 end
