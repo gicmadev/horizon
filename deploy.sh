@@ -39,10 +39,13 @@ echo "Linking shared data"
 ln -nfs $BASE/shared/downloads $BASE/releases/$RELEASEN/
 ln -nfs $BASE/shared/prod.secret.exs $BASE/releases/$RELEASEN/
 
+echo "Pulling new version from docker hub"
 ./containerctl.sh pull
 
-./containerctl.sh run --rm horizon do ecto.migrate
+echo "Migrating ecto"
+./containerctl.sh run --rm horizon ecto.migrate
 
+echo "containers up!"
 ./containerctl.sh up -d --remove-orphans
 
 echo "Linking release"
