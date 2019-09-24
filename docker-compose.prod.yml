@@ -12,6 +12,7 @@ services:
       - horizon
     labels:
         traefik.frontend.rule: "HostRegexp:horizon.gicma.dev"
+        traefik.enable: true
         traefik.port: 4000
 
 networks:
