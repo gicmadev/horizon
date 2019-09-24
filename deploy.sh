@@ -42,9 +42,6 @@ ln -nfs $BASE/shared/prod.secret.exs $BASE/releases/$RELEASEN/
 echo "Pulling new version from docker hub"
 ./containerctl.sh pull
 
-echo "Migrating ecto"
-( ./containerctl.sh run -T --rm horizon ecto.migrate )
-
 echo "containers up!"
 ./containerctl.sh up -d --remove-orphans
 
@@ -60,6 +57,11 @@ if [ "$COUNT" -gt "$KEEP_RELEASES" ]; then
   echo "Cleaning old releases"
   echo "$RELEASES" | tail -n +3 | xargs rm -rvf
 fi
+
+cd $BASE/releases/$RELEASEN
+
+echo "Migrating ecto"
+( ./containerctl.sh run -T --rm horizon ecto.migrate )
 CMD
 
 echo
