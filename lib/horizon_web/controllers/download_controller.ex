@@ -29,7 +29,7 @@ defmodule HorizonWeb.DownloadController do
     conn
     |> put_resp_header(
       "content-range",
-      "bytes #{offset}-#{file_size - 1}/#{file_size}"
+      "bytes #{offset}-#{file_size - 1}/#{file_size - 1}"
     )
     |> send_file(206, file_path, offset, file_size - offset)
   end
@@ -40,7 +40,7 @@ defmodule HorizonWeb.DownloadController do
     conn
     |> put_resp_header(
       "content-range",
-      "bytes #{offset}-#{download_stream.full_size - 1}/#{download_stream.full_size}"
+      "bytes #{offset}-#{download_stream.full_size - 1}/#{download_stream.full_size - 1}"
     )
     |> send_chunked(206)
     |> DownloadStream.stream_download(download_stream, offset)
