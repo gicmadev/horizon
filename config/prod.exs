@@ -20,7 +20,7 @@ config :horizon, HorizonWeb.Endpoint,
   api_origins: [~r{^https?://(.*\.?)podcloud\.fr$}]
 
 # Do not print debug messages in production
-config :logger, level: :info
+config :logger, level: :debug
 
 # ## SSL Support
 #
@@ -67,20 +67,20 @@ config :phoenix, :serve_endpoints, true
 config :horizon, Horizon.SecureTokens,
   podcloud: %{
     key: """
-      -----BEGIN PUBLIC KEY-----
-      MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA2ObhfH2iz/SnGkRkR4Bu
-      RVavq5szv/zVYnUVHiS0lo6wPgiNQETqurjUmw37b6tMU9KjzcTOC5gS80QgKKPv
-      eCms0xuLwNGeaLM5aUTLQ4xueJCzrHhUxwb7oc1+yrZRz2uYkgog5vVvPpeKwpkK
-      U2rN4APxaQ/flzaqedJW3ushqqYewA6+DPH6M6OgzmL3J/I6Dj4/kGrMJTZpOKxh
-      ba9UmtvL8Sc/2c2ESa+scdrU0DLPnU8yLbPpaWNkO7DC7hpmr4I+rKdcMRLWLcyn
-      WnqHlUfM+/b+ZvQqWy6OFVhfVKr0E/Ktv1AMHzp5hYGEQg7uz7zdI7/U21QIDXfP
-      6266tve5ZxZTScWlrSx6mhvmRQWIIT5pgWvrsQRu2zo65aNGVCoRf3NGh6QcWL0W
-      bZYSrFe5NkSSfpM7XxP8cX3kvfwRvsDp+OEYcmQ/tQyEyU/eMOk1E+GPxsbLnPse
-      cbGQIzp70FBMSHd+sivU4Rh8U6kD3j9C0krVQSRHnUY9SvpHBmsxXKV1R3nyzt/S
-      bHt8RbKMgxnGti1ziBotGts+i5s90BQE27R9/bFtAr4Ir9qCLemzABuF6fRHQmCk
-      seKEQK3cFluHTGmBFa/mEf3yJnuMXDz07aUHu9h9uvwecTZG7NLHOms5focTIGqc
-      SMDrxc9sUVCBKgzIFlsnshMCAwEAAQ==
-      -----END PUBLIC KEY-----
+    -----BEGIN PUBLIC KEY-----
+    MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA2ObhfH2iz/SnGkRkR4Bu
+    RVavq5szv/zVYnUVHiS0lo6wPgiNQETqurjUmw37b6tMU9KjzcTOC5gS80QgKKPv
+    eCms0xuLwNGeaLM5aUTLQ4xueJCzrHhUxwb7oc1+yrZRz2uYkgog5vVvPpeKwpkK
+    U2rN4APxaQ/flzaqedJW3ushqqYewA6+DPH6M6OgzmL3J/I6Dj4/kGrMJTZpOKxh
+    ba9UmtvL8Sc/2c2ESa+scdrU0DLPnU8yLbPpaWNkO7DC7hpmr4I+rKdcMRLWLcyn
+    WnqHlUfM+/b+ZvQqWy6OFVhfVKr0E/Ktv1AMHzp5hYGEQg7uz7zdI7/U21QIDXfP
+    6266tve5ZxZTScWlrSx6mhvmRQWIIT5pgWvrsQRu2zo65aNGVCoRf3NGh6QcWL0W
+    bZYSrFe5NkSSfpM7XxP8cX3kvfwRvsDp+OEYcmQ/tQyEyU/eMOk1E+GPxsbLnPse
+    cbGQIzp70FBMSHd+sivU4Rh8U6kD3j9C0krVQSRHnUY9SvpHBmsxXKV1R3nyzt/S
+    bHt8RbKMgxnGti1ziBotGts+i5s90BQE27R9/bFtAr4Ir9qCLemzABuF6fRHQmCk
+    seKEQK3cFluHTGmBFa/mEf3yJnuMXDz07aUHu9h9uvwecTZG7NLHOms5focTIGqc
+    SMDrxc9sUVCBKgzIFlsnshMCAwEAAQ==
+    -----END PUBLIC KEY-----
     """
   }
 
