@@ -4,7 +4,9 @@ defmodule Horizon.Repo.Migrations.CreateFiles do
   def change do
     UploadStatusEnum.create_type()
 
-    execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
+    # Run as admin in db :
+    #
+    # CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
     create table(:uploads, primary_key: false) do
       add(:id, :uuid,
