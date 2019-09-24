@@ -46,7 +46,7 @@ WORKDIR /app
 
 ADD . .
 
-RUN useradd app
+RUN useradd -u 1004 app
 
 RUN chown -R app: /app
 
