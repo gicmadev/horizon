@@ -16,7 +16,7 @@ defmodule HorizonWeb.UploadController do
           upload
       end
 
-    conn |> send_ok_data(%{id: upload.id})
+    conn |> send_ok_data(%{id: upload.id, status: upload.status})
   end
 
   def upload(conn, %{"upload_id" => upload_id, "horizon_file_upload" => file}) do

@@ -55,7 +55,6 @@ defmodule Horizon.Schema.Upload do
     |> validate_length(:filename, min: 1, max: 512)
     |> validate_length(:content_type, min: 1, max: 255)
     |> validate_number(:content_length, greater_than: 0)
-    |> ensure_content_type
     |> validate_required([:filename, :sha256, :content_type, :content_length])
   end
 
@@ -72,15 +71,6 @@ defmodule Horizon.Schema.Upload do
   end
 
   defp set_status(upload, status), do: upload |> cast(%{status: status}, [:status])
-
-  defp ensure_content_type(upload = %{content_type: content_type}) when is_binary(content_type) do
-    case String.trim(content_type) do
-      "" -> upload |> cast(%{content_type: @default_content_type}, [:content_type])
-      trimmed -> upload |> cast(%{content_type: trimmed}, [:content_type])
-   end
-  end
-
-  defp ensure_content_type(upload), do: upload |> cast(%{content_type: @default_content_type}, [:content_type])
 
   def get_upload_and_blobs(upload_id) do
     Horizon.Repo.all(
