@@ -43,7 +43,7 @@ echo "Pulling new version from docker hub"
 ./containerctl.sh pull
 
 echo "Migrating ecto"
-./containerctl.sh run --rm horizon ecto.migrate
+./containerctl.sh run -T --rm horizon ecto.migrate
 
 echo "containers up!"
 ./containerctl.sh up -d --remove-orphans
