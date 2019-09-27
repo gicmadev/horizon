@@ -82,6 +82,7 @@ defmodule Horizon.Schema.Upload do
           id: a.id,
           status: a.status,
           filename: a.filename,
+          content_type: a.content_type,
           sha256: a.sha256,
           storage: b.storage,
           remote_id: b.remote_id
