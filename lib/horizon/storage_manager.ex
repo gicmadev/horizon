@@ -110,7 +110,11 @@ defmodule Horizon.StorageManager do
         mirage_blob = Enum.find(blobs, fn a -> a.storage === :mirage end)
 
         if mirage_blob !== nil do
-          {:downloaded, Mirage.get_blob_path(mirage_blob)}
+          file_path = Mirage.get_blob_path(mirage_blob)
+
+          %{size: file_size} = File.stat!(file_path)
+
+          {:downloaded, file_path, file_size, mirage_blob.content_type}
         else
           raise "not yet implemented"
         end

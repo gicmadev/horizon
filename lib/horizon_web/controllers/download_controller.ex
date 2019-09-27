@@ -11,20 +11,28 @@ defmodule HorizonWeb.DownloadController do
   def download(conn, params) do
     %{"upload_id" => upload_id} = params
     case Horizon.StorageManager.download!(upload_id) do
-      {:downloaded, file_path} ->
-        send_file_from_path(conn, file_path)
+      {:downloaded, file_path, size, content_type} ->
+        send_file_from_path(conn, file_path, size, content_type)
 
-      {:downloading, download_stream} ->
-        send_file_from_download_stream(conn, download_stream)
+      {:downloading, download_stream, size, content_type} ->
+        send_file_from_download_stream(conn, download_stream, size, content_type)
 
       nil -> conn |> send_resp(404, "File not found")
     end
   end
 
-  defp send_file_from_path(conn, file_path) do
-    %{size: file_size} = File.stat!(file_path)
+  defp send_file_from_path(conn, file_path, file_size, content_type) do
+    conn =    conn
+        |> put_resp_header(
+          "Content-Type",
+          content_type
+        )
+        |> put_resp_header(
+          "cache-control",
+          "max-age=3600"
+        )
 
-    case get_offset(conn.req_headers) do
+    case get_ranges(conn.req_headers, file_size) do
       nil ->
         conn
         |> put_resp_header(
@@ -33,34 +41,87 @@ defmodule HorizonWeb.DownloadController do
         )
         |> send_file(200, file_path)
 
-      offset ->
+      [ {offset, size} | _ ] ->
         conn
         |> put_resp_header(
           "content-range",
-          "bytes #{offset}-#{file_size - 1}/#{file_size}"
+          "bytes #{offset}-#{offset+size-1}/#{file_size}"
         )
-        |> send_file(206, file_path, offset, file_size - offset)
+          |> send_file(206, file_path, offset, size)
     end
   end
 
-  def send_file_from_download_stream(conn, download_stream) do
-    offset = get_offset(conn.req_headers)
+  def send_file_from_download_stream(conn, download_stream, file_size, content_type) do
+    case get_ranges(conn.req_headers, file_size) do
+      nil ->
+        conn
+        |> put_resp_header(
+          "Accept-Ranges",
+          "bytes"
+        )
+        |> DownloadStream.stream_download(download_stream, 0)
 
-    conn
-    |> put_resp_header(
-      "content-range",
-      "bytes #{offset}-#{download_stream.full_size - 1}/#{download_stream.full_size}"
-    )
-    |> send_chunked(206)
-    |> DownloadStream.stream_download(download_stream, offset)
+      [ {offset, size} | _ ] ->
+        conn
+        |> put_resp_header(
+          "content-range",
+          "bytes #{offset}-#{offset+size-1}/#{file_size}"
+        )
+        |> send_chunked(206)
+        |> DownloadStream.stream_download(download_stream, offset)
+    end
   end
 
-  defp get_offset(headers) do
+  defp get_ranges(headers, fullsize) do
     case List.keyfind(headers, "range", 0) do
-      {"range", "bytes=" <> start_pos} ->
-        String.split(start_pos, "-") |> hd |> String.to_integer()
+      {"range", range} ->
+        ["bytes" | ranges ] = range |> String.downcase |> String.split("=")
+
+        ranges = ranges 
+                 |> Enum.at(0)
+                 |> String.split(",") 
+                 |> Enum.map(&parse_range/1)
+                 |> Enum.reject(fn x -> x == nil end)
+                 |> Enum.map(fn {offset, endset} ->
+                   case {offset, endset} do
+                     {nil, endset} -> {fullsize - endset, endset}
+                     {offset, nil} -> {offset, fullsize - offset}
+                     {offset, endset} -> {offset, endset + 1 - offset}
+                   end
+                 end)
+
+        if Enum.count(ranges) == 0 do
+          nil
+        else
+          ranges
+        end
 
       nil -> nil
     end
   end
+
+  defp parse_range(rng) do
+    sets =  Regex.named_captures(~r/^(?<start>[\d]*)-(?<end>[\d]*)$/, rng)
+
+    if sets == nil do
+      nil
+    else
+      %{"start" => offset, "end" => endset} = sets
+
+      offset = case offset do
+        "" -> nil
+        val -> String.to_integer(val)
+      end
+      
+      endset = case endset do
+        "" -> nil
+        val -> String.to_integer(val)
+      end
+
+      {offset, endset}
+      
+    end
+  end
+
+
 end
