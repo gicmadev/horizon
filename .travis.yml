@@ -27,4 +27,4 @@ deploy:
   script: "./deploy.sh"
   on:
     branch: master
-before_install: 
+before_install:

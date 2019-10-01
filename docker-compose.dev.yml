@@ -16,7 +16,7 @@ services:
     ports:
       - 4000:4000
     labels:
-        traefik.frontend.rule: "HostRegexp:horizon.{host:podcloud}.test"
+        traefik.frontend.rule: "Host:warp.horizon.gicma.dev.test,horizon.gicma.dev.test"
         traefik.frontend.priority: 999999
         traefik.port: 4000
 
@@ -40,7 +40,7 @@ services:
       - podcloud
     working_dir: /app
     labels:
-        traefik.frontend.rule: "HostRegexp:sb.horizon.podcloud.test"
+        traefik.frontend.rule: "HostRegexp:sb.horizon.gicma.dev.test"
         traefik.frontend.priority: 999999
         traefik.port: 6006
     command: ["npm", "run", "storybook"]

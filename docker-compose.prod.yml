@@ -11,7 +11,7 @@ services:
       - traefik
       - horizon
     labels:
-        traefik.frontend.rule: "HostRegexp:horizon.gicma.dev"
+        traefik.frontend.rule: "Host:warp.horizon.gicma.dev,horizon.gicma.dev"
         traefik.enable: true
         traefik.port: 4000
 
