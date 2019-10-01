@@ -10,6 +10,8 @@ defmodule HorizonWeb.DownloadController do
 
   def download(conn, params) do
     %{"upload_id" => upload_id} = params
+    upload_id = upload_id |> String.split(".") |> Enum.at(0)
+
     case Horizon.StorageManager.download!(upload_id) do
       {:downloaded, file_path, size, content_type} ->
         send_file_from_path(conn, file_path, size, content_type)
