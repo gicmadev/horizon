@@ -14,3 +14,5 @@ window.loadHorizonUploader = (element, serverUrl, uploadId, token, url) => {
     element
   );
 };
+
+window.dispatchEvent(new Event("HorizonUploaderLoaded"));
