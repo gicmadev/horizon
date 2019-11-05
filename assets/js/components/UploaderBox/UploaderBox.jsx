@@ -5,7 +5,7 @@ import Uploader from "../Uploader";
 import RemoteURL from "../RemoteURL";
 
 const UploaderBox = props => {
-  const { serverUrl, uploadId, token, url } = props;
+  const { serverUrl, uploadId, token, url, beforeDelete } = props;
 
   const [files, setFiles] = useState([]);
   const [mode, setMode] = useState("upload");
@@ -58,6 +58,7 @@ const UploaderBox = props => {
           setFiles={setFiles}
           setFileUploaded={setFileUploaded}
           toggleMode={toggleMode}
+          beforeDelete={beforeDelete}
         />
       ) : (
         <RemoteURL
