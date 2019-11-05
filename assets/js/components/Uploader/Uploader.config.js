@@ -22,7 +22,8 @@ const useUploaderConfig = ({
   files,
   setHorizonUrl,
   setFiles,
-  setFileUploaded
+  setFileUploaded,
+  beforeDelete
 }) => {
   let delete_on_server = null;
 
@@ -87,35 +88,40 @@ const useUploaderConfig = ({
         // and reset the variable
         delete_on_server = null;
 
-        fetch([serverUrl, "upload", uploadId].join("/"), {
-          method: "DELETE",
+        return beforeDelete(
+          () =>
+            fetch([serverUrl, "upload", uploadId].join("/"), {
+              method: "DELETE",
 
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-          .then(result => result.json())
-          .then(
-            result => {
-              if (typeof result !== "object")
-                return error("Invalid server response");
-
-              if (result.errors) {
-                if (result.errors.detail === "Not Found") {
-                  return load();
-                } else if (typeof result.errors.detail === "string") {
-                  return error(result.errors.detail);
-                }
+              headers: {
+                Authorization: `Bearer ${token}`
               }
+            })
+              .then(result => result.json())
+              .then(
+                result => {
+                  if (typeof result !== "object")
+                    return error("Invalid server response");
 
-              if (result.ok === true && result.deleted === true) return load();
+                  if (result.errors) {
+                    if (result.errors.detail === "Not Found") {
+                      return load();
+                    } else if (typeof result.errors.detail === "string") {
+                      return error(result.errors.detail);
+                    }
+                  }
 
-              return error("Invalid server response");
-            },
-            () => {
-              return error("Invalid server response");
-            }
-          );
+                  if (result.ok === true && result.deleted === true)
+                    return load();
+
+                  return error("Invalid server response");
+                },
+                () => {
+                  return error("Invalid server response");
+                }
+              ),
+          error
+        );
       },
       fetch: null
     },
