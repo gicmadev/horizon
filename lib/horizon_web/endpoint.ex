@@ -46,8 +46,8 @@ defmodule HorizonWeb.Endpoint do
   plug(Corsica,
     origins: Application.get_env(:horizon, HorizonWeb.Endpoint)[:api_origins],
     log: [rejected: :error],
-    allow_headers: ~w(authorization content-disposition),
-    expose_headers: ~w(content-disposition content-length)
+    allow_headers: ~w(authorization content-disposition tus-resumable upload-length upload-metadata location content-type upload-offset),
+    expose_headers: ~w(content-disposition content-length tus-resumable upload-length upload-metadata location content-type upload-offset)
   )
 
   plug(HorizonWeb.Router)

@@ -7,8 +7,6 @@ services:
     volumes:
       - ./downloads:/downloads
       - ./prod.secret.exs:/app/config/prod.secret.exs
-    tmpfs:
-      - /tmp
     networks:
       - traefik
       - horizon

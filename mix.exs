@@ -50,7 +50,8 @@ defmodule Horizon.MixProject do
       {:joken, "~> 2.0"},
       {:jose, "~> 1.9"},
       {:corsica, "~> 1.0"},
-      {:taglib, "~> 0.2"}
+      {:taglib, "~> 0.2"},
+      {:tus, "~> 0.1.0"}
     ]
   end
 

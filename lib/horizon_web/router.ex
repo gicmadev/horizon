@@ -12,8 +12,15 @@ defmodule HorizonWeb.Router do
 
     post "/upload/new", UploadController, :new
 
-    post "/upload/:upload_id", UploadController, :upload
-    options "/upload/:upload_id", UploadController, :options
+    scope "/upload/:upload_id/chunks" do
+      options "/",          UploadChunksController, :options
+      options "/:uid",      UploadChunksController, :options
+      match :head, "/:uid", UploadChunksController, :head
+      get "/:uid", UploadChunksController, :head
+      post "/",             UploadChunksController, :post
+      patch "/:uid",        UploadChunksController, :patch
+      delete "/:uid",       UploadChunksController, :delete
+    end
 
     get "/upload/:upload_id", UploadController, :get
 

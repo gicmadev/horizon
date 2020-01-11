@@ -9,6 +9,7 @@ services:
     volumes:
       - ./.mix:/var/run/.mix
       - ./downloads:/downloads
+      - ./tmp:/tmp
       - .:/app
     networks:
       - traefik

@@ -19,14 +19,6 @@ defmodule HorizonWeb.UploadController do
     conn |> send_ok_data(%{id: upload.id, status: upload.status})
   end
 
-  def upload(conn, %{"upload_id" => upload_id, "horizon_file_upload" => file}) do
-    Logger.debug("upload_id : #{upload_id}")
-
-    {:ok, upload} = Horizon.StorageManager.store!(upload_id, file)
-
-    conn |> send_ok_data(%{id: upload.id})
-  end
-
   def revert(conn, %{"upload_id" => upload_id}) do
     Logger.debug("upload_id : #{upload_id}")
 

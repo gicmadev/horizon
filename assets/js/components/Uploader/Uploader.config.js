@@ -1,4 +1,5 @@
 import { FileStatus } from "react-filepond";
+import tus from "tus-js-client";
 
 const FakeBlob = class extends Blob {
   constructor(data) {
@@ -33,14 +34,49 @@ const useUploaderConfig = ({
     name: "horizon_file_upload",
     server: {
       url: serverUrl,
-      process: {
-        url: `/upload/${uploadId}`,
-        method: "POST",
-        withCredentials: false,
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        onload: response => JSON.parse(response).id
+      process: (fieldName, file, metadata, load, error, progress, abort) => {
+        window.horizon_is_uploading = true;
+
+        var upload = new tus.Upload(file, {
+          endpoint: [serverUrl, "upload", uploadId, "chunks"].join("/") + "/", // Final / is important
+          retryDelays: [0, 1000, 3000, 5000, 15000],
+          chunkSize: 2.5 * 1024 * 1024,
+          withCredentials: false,
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          metadata: {
+            filename: file.name,
+            filetype: file.type,
+            upload_id: uploadId
+          },
+          onError: function(err) {
+            console.error("Failed because: " + err);
+            error(err);
+            window.horizon_is_uploading = false;
+            window.abort_upload = false;
+          },
+          onProgress: function(bytesUploaded, bytesTotal) {
+            progress(true, bytesUploaded, bytesTotal);
+          },
+          onSuccess: function() {
+            load(uploadId);
+          }
+        });
+
+        window.abort_upload = () => {
+          upload.abort();
+          abort();
+          window.horizon_is_uploading = false;
+          window.abort_upload = false;
+        };
+
+        // Start the upload
+        upload.start();
+
+        return {
+          abort: window.abort_upload
+        };
       },
       revert: {
         url: `/upload/${uploadId}/revert`,
@@ -69,12 +105,16 @@ const useUploaderConfig = ({
                 ? error(body.errors.detail || body.errors)
                 : load(new FakeBlob(body)),
             err => error(err)
+          )
+          .finally(
+            () => (window.abort_upload = window.horizon_is_uploading = false)
           );
 
         return {
           abort: () => {
             controller.abort();
             abort();
+            window.horizon_is_uploading = false;
           }
         };
       },

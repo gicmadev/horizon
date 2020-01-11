@@ -18,7 +18,8 @@
     "phoenix_html": "file:deps/phoenix_html",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "react-filepond": "^7.0.1"
+    "react-filepond": "^7.0.1",
+    "tus-js-client": "^1.8.0"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",

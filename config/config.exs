@@ -25,6 +25,16 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# List here all of your upload controllers
+config :tus, controllers: [HorizonWeb.UploadChunksController]
+
+# This is the config for the HorizonWeb.UploadController
+config :tus, HorizonWeb.UploadChunksController,
+  storage: Tus.Storage.Local,
+  base_path: "/tmp/tus_uploads",
+  cache: Tus.Cache.Memory,
+  max_size: 10 * 1024 * 1024 * 1024
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
