@@ -15,6 +15,7 @@ config :horizon, HorizonWeb.Endpoint,
   ],
   code_reloader: true,
   check_origin: false,
+  debug_errors: true,
   watchers: [],
   api_origins: [~r{^https?://(.*\.?)podcloud\.test$}]
 
