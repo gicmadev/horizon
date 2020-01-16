@@ -23,6 +23,7 @@ defmodule HorizonWeb.Router do
     end
 
     get "/upload/:upload_id", UploadController, :get
+    get "/user_storage/:owner", UploadController, :user_storage
 
     delete "/upload/:upload_id/revert", UploadController, :revert
     delete "/upload/:upload_id", UploadController, :delete

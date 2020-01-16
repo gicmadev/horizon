@@ -146,6 +146,59 @@ defmodule Horizon.StorageManager do
     %{filename: filename, status: status, storages: Enum.map(blobs, fn a -> a.storage end)}
   end
 
+  def user_storage(owner) do
+    response = %{}
+
+    results = Ecto.Adapters.SQL.query!(
+      Horizon.Repo, 
+      "SELECT 
+      bucket as feed_id, 
+      CEIL(SUM(content_length))::INTEGER AS total_size, 
+      SUM(duration) as total_duration, 
+      COUNT(owner) as episodes_count 
+      FROM public.uploads 
+      WHERE 
+      status='ok' AND owner=$1 
+      GROUP BY bucket;", 
+      [owner]
+    )
+
+    feeds = results.rows |> Enum.map(fn row -> Enum.zip(results.columns, row) |> Map.new end)
+
+    results = Ecto.Adapters.SQL.query!(
+      Horizon.Repo, 
+      "SELECT
+      CEIL(SUM(content_length))::INTEGER AS recent_size,
+      CEIL(
+      SUM(content_length)
+      /
+      EXTRACT(
+      epoch FROM (
+      CASE WHEN MAX(inserted_at) = MIN(inserted_at)
+      THEN (interval '12 month')
+      ELSE (MAX(inserted_at) - MIN(inserted_at))
+      END
+      )
+      )
+      ) as recent_speed,
+      COUNT(inserted_at) as recent_count
+      FROM public.uploads
+      WHERE 
+      inserted_at > date_trunc(
+      'day', 
+      NOW() - interval '12 month'
+      ) AND status='ok' AND owner=$1;", 
+      [owner]
+    )
+
+    resp = results.rows 
+           |> Enum.map(fn row -> Enum.zip(results.columns, row) |> Map.new end) 
+           |> List.first 
+           |> Map.merge(%{feeds: feeds})
+
+    {:ok, resp}
+  end
+
   # Server (callbacks)
 
   @impl true
