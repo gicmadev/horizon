@@ -50,13 +50,6 @@ defmodule HorizonWeb.UploadController do
     })
   end
 
-  def user_storage(conn, %{"owner" => owner}) do
-    {:ok, status} = Horizon.StorageManager.user_storage(owner)
-
-    conn
-    |> send_ok_data(status)
-  end
-
   defp send_upload(conn, upload) do
     case Horizon.StorageManager.download!(upload.id) do
       {:downloaded, file_path} -> conn |> Plug.Conn.send_file(200, file_path)

@@ -146,49 +146,55 @@ defmodule Horizon.StorageManager do
     %{filename: filename, status: status, storages: Enum.map(blobs, fn a -> a.storage end)}
   end
 
-  def user_storage(owner) do
+  def storage_status(owner \\ nil) do
     response = %{}
+
+    query = """
+      SELECT 
+        bucket as feed_id, 
+        CEIL(SUM(content_length))::INTEGER AS total_size, 
+        SUM(duration) as total_duration, 
+        COUNT(owner) as episodes_count 
+      FROM public.uploads 
+      WHERE status='ok'%ADD_OWNER_CLAUSE%
+      GROUP BY bucket;
+    """ |> add_owner_clause(owner)
 
     results = Ecto.Adapters.SQL.query!(
       Horizon.Repo, 
-      "SELECT 
-      bucket as feed_id, 
-      CEIL(SUM(content_length))::INTEGER AS total_size, 
-      SUM(duration) as total_duration, 
-      COUNT(owner) as episodes_count 
-      FROM public.uploads 
-      WHERE 
-      status='ok' AND owner=$1 
-      GROUP BY bucket;", 
-      [owner]
+      query,
+      Enum.reject([owner], &is_nil/1)
     )
 
     feeds = results.rows |> Enum.map(fn row -> Enum.zip(results.columns, row) |> Map.new end)
 
-    results = Ecto.Adapters.SQL.query!(
-      Horizon.Repo, 
-      "SELECT
-      CEIL(SUM(content_length))::INTEGER AS recent_size,
-      CEIL(
-      SUM(content_length)
-      /
-      EXTRACT(
-      epoch FROM (
-      CASE WHEN MAX(inserted_at) = MIN(inserted_at)
-      THEN (interval '12 month')
-      ELSE (MAX(inserted_at) - MIN(inserted_at))
-      END
-      )
-      )
-      ) as recent_speed,
-      COUNT(inserted_at) as recent_count
+    query = """
+      SELECT
+        CEIL(SUM(content_length))::INTEGER AS recent_size,
+        CEIL(
+          SUM(content_length)
+          /
+          EXTRACT(
+            epoch FROM (
+              CASE WHEN MAX(inserted_at) = MIN(inserted_at)
+              THEN (interval '12 month')
+              ELSE (MAX(inserted_at) - MIN(inserted_at))
+              END
+            )
+          )
+        ) as recent_speed,
+        COUNT(inserted_at) as recent_count
       FROM public.uploads
       WHERE 
-      inserted_at > date_trunc(
-      'day', 
-      NOW() - interval '12 month'
-      ) AND status='ok' AND owner=$1;", 
-      [owner]
+        inserted_at > date_trunc(
+          'day', NOW() - interval '12 month'
+      ) AND status='ok'%ADD_OWNER_CLAUSE%;
+      """ |> add_owner_clause(owner)
+
+    results = Ecto.Adapters.SQL.query!(
+      Horizon.Repo,
+      query,
+      Enum.reject([owner], &is_nil/1)
     )
 
     resp = results.rows 
@@ -197,6 +203,14 @@ defmodule Horizon.StorageManager do
            |> Map.merge(%{feeds: feeds})
 
     {:ok, resp}
+  end
+
+  defp add_owner_clause(query, nil) do
+    query |> String.replace("%ADD_OWNER_CLAUSE%", "")
+  end
+
+  defp add_owner_clause(query, owner) do
+    query |> String.replace("%ADD_OWNER_CLAUSE%", "AND owner=$1")
   end
 
   # Server (callbacks)
