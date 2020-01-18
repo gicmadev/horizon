@@ -152,7 +152,7 @@ defmodule Horizon.StorageManager do
     query = """
       SELECT 
         bucket as feed_id, 
-        CEIL(SUM(content_length))::INTEGER AS total_size, 
+        CEIL(SUM(content_length))::BIGINT AS total_size, 
         SUM(duration) as total_duration, 
         COUNT(owner) as episodes_count 
       FROM public.uploads 
@@ -170,7 +170,7 @@ defmodule Horizon.StorageManager do
 
     query = """
       SELECT
-        CEIL(SUM(content_length))::INTEGER AS recent_size,
+        CEIL(SUM(content_length))::BIGINT AS recent_size,
         CEIL(
           SUM(content_length)
           /
