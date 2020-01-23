@@ -1,4 +1,8 @@
 defmodule Horizon.StorageManager do
+  @moduledoc """
+  Provides Storage functions
+  """
+
   use GenServer
 
   require Logger
@@ -18,9 +22,39 @@ defmodule Horizon.StorageManager do
     )
   end
 
+
+  @clean_uploads_interval 1 * 3_600 * 1_000
+
+
+  # Server (callbacks)
+  @impl true
+  def init(_) do
+    Process.send_after(self(), :clean_uploads, 1_000)
+
+    {:ok, %{last_clean_uploads_at: nil}}
+  end
+
+  @impl true
+  def handle_info(:clean_uploads, state) do
+    clean_uploads()
+
+    Process.send_after(self(), :clean_uploads, @clean_uploads_interval)
+
+    {:noreply, Map.merge(state, %{last_clean_uploads_at: :calendar.local_time()})}
+  end
+
+  def clean_uploads do
+    from(u in Upload, where: u.status == ^:draft and u.updated_at < ago(36, "hour"))
+    |> Repo.all
+    |> Enum.each(&reset_and_unstore!/1)
+    |> Repo.delete_all
+
+    from(u in Upload, where: u.status == ^:new and u.updated_at < ago(24, "hour"))
+    |> Repo.delete_all
+  end
+
   def new!(params) do
     upload = Upload.new(params)
-    Logger.debug("upload : #{inspect upload}")
     Repo.insert(upload)
   end
 
@@ -31,16 +65,11 @@ defmodule Horizon.StorageManager do
   def store!(upload_id, file) do
     upload = Repo.get_by!(Upload, id: upload_id, status: :new)
 
-    Logger.debug("RENAME TO : #{file.path}")
-
     new_path = "#{file.path}#{:filename.extension(file.filename)}"
-    Logger.debug("RENAME TO : #{new_path}")
 
     File.rename!(file.path, new_path)
 
     file = %{file | path: new_path}
-
-    Logger.debug(" file : #{inspect file}")
 
     %{size: size} = File.stat!(file.path)
     sha256 = get_sha256(file.path)
@@ -52,8 +81,6 @@ defmodule Horizon.StorageManager do
       content_length: size,
     }
 
-    Logger.debug(" file : #{inspect upload_data}")
-
     upload_data = case Taglib.new(file.path) do
       {:ok, tags} -> 
         Map.merge(upload_data, %{
@@ -63,8 +90,8 @@ defmodule Horizon.StorageManager do
             _ -> nil
           end
         })
-      eh -> 
-        Logger.debug("Hey hey #{inspect eh}")
+      err -> 
+        Logger.error("Error inspecting taglib for #{file.path} : #{inspect err}")
         upload_data
     end
 
@@ -77,31 +104,40 @@ defmodule Horizon.StorageManager do
 
         Mirage.store!(file, upload)
 
-        File.rm!(file.path)
+        File.rm!(file.path) # remove temp file
       end)
 
     {:ok, upload}
   end
 
   def revert!(upload_id) do
-    from(u in Upload, where: u.id == ^upload_id and u.status in [^:new, ^:draft])
-    |> Repo.one!
-    |> Upload.reset
-    |> Repo.update!
-
+    {:ok, _} = from(u in Upload, where: u.id == ^upload_id and u.status in [^:new, ^:draft]) 
+               |> Repo.one!
+               |> reset_and_unstore!
 
     {:ok, :reverted}
   end
 
   def remove!(upload_id) do
-    Repo.get!(
-      Upload,
-      upload_id
-    )
-    |> Upload.reset
-    |> Repo.update!
+    {:ok, _} = Repo.get!(Upload, upload_id) |> reset_and_unstore!
 
     {:ok, :deleted}
+  end
+
+  def clear_bucket!(bucket_id) do
+    from(u in Upload, where: u.bucker == ^bucket_id)
+    |> Repo.all
+    |> Enum.each(&reset_and_unstore!/1)
+    |> Repo.delete_all
+  end
+
+  defp reset_and_unstore!(upload) do
+    Repo.transaction(fn ->
+      Mirage.unstore!(upload)
+
+      Upload.reset(upload)
+      |> Repo.update!
+    end)
   end
 
   def burn!(upload_id) do
@@ -147,8 +183,6 @@ defmodule Horizon.StorageManager do
   end
 
   def storage_status(owner \\ nil) do
-    response = %{}
-
     query = """
       SELECT 
         bucket as feed_id, 
@@ -205,26 +239,19 @@ defmodule Horizon.StorageManager do
     {:ok, resp}
   end
 
-  defp add_owner_clause(query, nil) do
-    query |> String.replace("%ADD_OWNER_CLAUSE%", "")
-  end
-
-  defp add_owner_clause(query, owner) do
-    query |> String.replace("%ADD_OWNER_CLAUSE%", "AND owner=$1")
-  end
-
-  # Server (callbacks)
-
-  @impl true
-  def init(state) do
-    {:ok, state}
-  end
-
   defp get_sha256(file_path) do
     File.stream!(file_path, [], 2_048)
     |> Enum.reduce(:crypto.hash_init(:sha256), &:crypto.hash_update(&2, &1))
     |> :crypto.hash_final()
     |> Base.encode16()
     |> String.downcase()
+  end
+
+  defp add_owner_clause(query, nil) do
+    query |> String.replace("%ADD_OWNER_CLAUSE%", "")
+  end
+
+  defp add_owner_clause(query, _owner) do
+    query |> String.replace("%ADD_OWNER_CLAUSE%", "AND owner=$1")
   end
 end

@@ -42,7 +42,7 @@ defmodule Horizon.Schema.Upload do
   @doc false
   def reset(upload) do
     upload
-    |> cast(%{filename: nil, content_type: nil, sha256: nil}, [:filename, :content_type, :sha256])
+    |> cast(%{filename: nil, content_length: nil, content_type: nil, sha256: nil}, [:filename, :content_type, :sha256])
     |> set_status(:new)
   end
 
