@@ -13,6 +13,7 @@ defmodule Horizon.StorageManager do
 
   alias Horizon.Repo
   alias Horizon.Schema.Upload
+  alias Horizon.Schema.Blob
 
   def start_link(_opts \\ []) do
     GenServer.start_link(
@@ -44,13 +45,28 @@ defmodule Horizon.StorageManager do
   end
 
   def clean_uploads do
+    # Clean draft uploads
     from(u in Upload, where: u.status == ^:draft and u.updated_at < ago(36, "hour"))
-    |> Repo.all
-    |> Enum.each(&reset_and_unstore!/1)
     |> Repo.delete_all
 
+    # Clean new uploads
     from(u in Upload, where: u.status == ^:new and u.updated_at < ago(24, "hour"))
     |> Repo.delete_all
+
+    # Clean orphan blobs
+    from(
+      b in Blob, 
+      left_join: u in Upload,
+      on: b.sha256 == u.sha256,
+      where: is_nil(u.id)
+    )
+    |> Repo.all
+    |> Enum.each(fn b ->
+      Repo.transaction(fn ->
+        Repo.delete!(b)
+        Mirage.unstore!(b)
+      end)
+    end)
   end
 
   def new!(params) do
@@ -113,28 +129,24 @@ defmodule Horizon.StorageManager do
   def revert!(upload_id) do
     {:ok, _} = from(u in Upload, where: u.id == ^upload_id and u.status in [^:new, ^:draft]) 
                |> Repo.one!
-               |> reset_and_unstore!
+               |> reset!
 
     {:ok, :reverted}
   end
 
   def remove!(upload_id) do
-    {:ok, _} = Repo.get!(Upload, upload_id) |> reset_and_unstore!
+    {:ok, _} = Repo.get!(Upload, upload_id) |> reset!
 
     {:ok, :deleted}
   end
 
   def clear_bucket!(bucket_id) do
     from(u in Upload, where: u.bucker == ^bucket_id)
-    |> Repo.all
-    |> Enum.each(&reset_and_unstore!/1)
     |> Repo.delete_all
   end
 
-  defp reset_and_unstore!(upload) do
+  defp reset!(upload) do
     Repo.transaction(fn ->
-      Mirage.unstore!(upload)
-
       Upload.reset(upload)
       |> Repo.update!
     end)
@@ -142,7 +154,7 @@ defmodule Horizon.StorageManager do
 
   def burn!(upload_id) do
     Repo.get!(Upload, upload_id)
-    |> Upload.burn()
+    |> Upload.burn
     |> Repo.update!
 
     {:ok, :burnt}
