@@ -1,4 +1,8 @@
 defmodule Horizon.StorageManager do
+  @moduledoc """
+  Provides Storage functions
+  """
+
   use GenServer
 
   require Logger
@@ -9,6 +13,7 @@ defmodule Horizon.StorageManager do
 
   alias Horizon.Repo
   alias Horizon.Schema.Upload
+  alias Horizon.Schema.Blob
 
   def start_link(_opts \\ []) do
     GenServer.start_link(
@@ -18,9 +23,54 @@ defmodule Horizon.StorageManager do
     )
   end
 
+
+  @clean_uploads_interval 1 * 3_600 * 1_000
+
+
+  # Server (callbacks)
+  @impl true
+  def init(_) do
+    Process.send_after(self(), :clean_uploads, 1_000)
+
+    {:ok, %{last_clean_uploads_at: nil}}
+  end
+
+  @impl true
+  def handle_info(:clean_uploads, state) do
+    clean_uploads()
+
+    Process.send_after(self(), :clean_uploads, @clean_uploads_interval)
+
+    {:noreply, Map.merge(state, %{last_clean_uploads_at: :calendar.local_time()})}
+  end
+
+  def clean_uploads do
+    # Clean draft uploads
+    from(u in Upload, where: u.status == ^:draft and u.updated_at < ago(36, "hour"))
+    |> Repo.delete_all
+
+    # Clean new uploads
+    from(u in Upload, where: u.status == ^:new and u.updated_at < ago(24, "hour"))
+    |> Repo.delete_all
+
+    # Clean orphan blobs
+    from(
+      b in Blob, 
+      left_join: u in Upload,
+      on: b.sha256 == u.sha256,
+      where: is_nil(u.id)
+    )
+    |> Repo.all
+    |> Enum.each(fn b ->
+      Repo.transaction(fn ->
+        Repo.delete!(b)
+        Mirage.unstore!(b)
+      end)
+    end)
+  end
+
   def new!(params) do
     upload = Upload.new(params)
-    Logger.debug("upload : #{inspect upload}")
     Repo.insert(upload)
   end
 
@@ -31,16 +81,11 @@ defmodule Horizon.StorageManager do
   def store!(upload_id, file) do
     upload = Repo.get_by!(Upload, id: upload_id, status: :new)
 
-    Logger.debug("RENAME TO : #{file.path}")
-
     new_path = "#{file.path}#{:filename.extension(file.filename)}"
-    Logger.debug("RENAME TO : #{new_path}")
 
     File.rename!(file.path, new_path)
 
     file = %{file | path: new_path}
-
-    Logger.debug(" file : #{inspect file}")
 
     %{size: size} = File.stat!(file.path)
     sha256 = get_sha256(file.path)
@@ -52,8 +97,6 @@ defmodule Horizon.StorageManager do
       content_length: size,
     }
 
-    Logger.debug(" file : #{inspect upload_data}")
-
     upload_data = case Taglib.new(file.path) do
       {:ok, tags} -> 
         Map.merge(upload_data, %{
@@ -63,8 +106,8 @@ defmodule Horizon.StorageManager do
             _ -> nil
           end
         })
-      eh -> 
-        Logger.debug("Hey hey #{inspect eh}")
+      err -> 
+        Logger.error("Error inspecting taglib for #{file.path} : #{inspect err}")
         upload_data
     end
 
@@ -77,36 +120,41 @@ defmodule Horizon.StorageManager do
 
         Mirage.store!(file, upload)
 
-        File.rm!(file.path)
+        File.rm!(file.path) # remove temp file
       end)
 
     {:ok, upload}
   end
 
   def revert!(upload_id) do
-    from(u in Upload, where: u.id == ^upload_id and u.status in [^:new, ^:draft])
-    |> Repo.one!
-    |> Upload.reset
-    |> Repo.update!
-
+    {:ok, _} = from(u in Upload, where: u.id == ^upload_id and u.status in [^:new, ^:draft]) 
+               |> Repo.one!
+               |> reset!
 
     {:ok, :reverted}
   end
 
   def remove!(upload_id) do
-    Repo.get!(
-      Upload,
-      upload_id
-    )
-    |> Upload.reset
-    |> Repo.update!
+    {:ok, _} = Repo.get!(Upload, upload_id) |> reset!
 
     {:ok, :deleted}
   end
 
+  def clear_bucket!(bucket_id) do
+    from(u in Upload, where: u.bucker == ^bucket_id)
+    |> Repo.delete_all
+  end
+
+  defp reset!(upload) do
+    Repo.transaction(fn ->
+      Upload.reset(upload)
+      |> Repo.update!
+    end)
+  end
+
   def burn!(upload_id) do
     Repo.get!(Upload, upload_id)
-    |> Upload.burn()
+    |> Upload.burn
     |> Repo.update!
 
     {:ok, :burnt}
@@ -147,8 +195,6 @@ defmodule Horizon.StorageManager do
   end
 
   def storage_status(owner \\ nil) do
-    response = %{}
-
     query = """
       SELECT 
         bucket as feed_id, 
@@ -205,26 +251,19 @@ defmodule Horizon.StorageManager do
     {:ok, resp}
   end
 
-  defp add_owner_clause(query, nil) do
-    query |> String.replace("%ADD_OWNER_CLAUSE%", "")
-  end
-
-  defp add_owner_clause(query, owner) do
-    query |> String.replace("%ADD_OWNER_CLAUSE%", "AND owner=$1")
-  end
-
-  # Server (callbacks)
-
-  @impl true
-  def init(state) do
-    {:ok, state}
-  end
-
   defp get_sha256(file_path) do
     File.stream!(file_path, [], 2_048)
     |> Enum.reduce(:crypto.hash_init(:sha256), &:crypto.hash_update(&2, &1))
     |> :crypto.hash_final()
     |> Base.encode16()
     |> String.downcase()
+  end
+
+  defp add_owner_clause(query, nil) do
+    query |> String.replace("%ADD_OWNER_CLAUSE%", "")
+  end
+
+  defp add_owner_clause(query, _owner) do
+    query |> String.replace("%ADD_OWNER_CLAUSE%", "AND owner=$1")
   end
 end

@@ -30,6 +30,16 @@ defmodule Horizon.StorageManager.Provider.Mirage do
     end
   end
 
+  def unstore!(%{sha256: sha256}) do
+    path = get_path(sha256)
+
+    case File.rm(path) do
+      :ok -> :ok
+      {:error, :enoent} -> :ok
+      _ -> File.rm!(path)
+    end
+  end
+
   def get_blob_path(%{remote_id: sha256, storage: @name}), do: get_path(sha256)
 
   defp get_path(sha256), do: get_dir(sha256) |> Path.join(sha256)
