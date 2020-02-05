@@ -80,3 +80,8 @@ config :horizon, Horizon.Repo,
   database: "horizon_dev",
   hostname: "postgres",
   pool_size: 10
+
+config :ex_aws,
+  debug_requests: true
+
+config :ex_aws, :s3, bucket: "horizon-dev"

@@ -9,7 +9,8 @@ defmodule Horizon.StorageManager do
 
   import Ecto.Query
 
-  alias Horizon.StorageManager.Provider.{Mirage}
+  alias Horizon.StorageManager
+  alias Horizon.StorageManager.Provider.{Mirage, Wasabi}
 
   alias Horizon.Repo
   alias Horizon.Schema.Upload
@@ -24,13 +25,14 @@ defmodule Horizon.StorageManager do
   end
 
 
-  @clean_uploads_interval 1 * 3_600 * 1_000
-
+  @clean_uploads_interval 60 * 60 * 1_000
+  @wasabi_uploads_interval 3 * 60 * 1_000
 
   # Server (callbacks)
   @impl true
   def init(_) do
     Process.send_after(self(), :clean_uploads, 1_000)
+    Process.send_after(self(), :send_uploads_to_wasabi, 5_000)
 
     {:ok, %{last_clean_uploads_at: nil}}
   end
@@ -44,6 +46,25 @@ defmodule Horizon.StorageManager do
     {:noreply, Map.merge(state, %{last_clean_uploads_at: :calendar.local_time()})}
   end
 
+  @impl true
+  def handle_info(:clean_orphan_blobs, state) do
+    clean_uploads()
+
+    Process.send_after(self(), :clean_orphans_blobs, @clean_uploads_interval)
+
+    {:noreply, Map.merge(state, %{last_clean_orphans_at: :calendar.local_time()})}
+  end
+
+  @impl true
+  def handle_info(:send_uploads_to_wasabi, state) do
+    send_uploads_to_wasabi()
+
+    Process.send_after(self(), :send_uploads_to_wasabi, @wasabi_uploads_interval)
+
+    {:noreply, Map.merge(state, %{last_wasabi_uploads_at: :calendar.local_time()})}
+  end
+
+
   def clean_uploads do
     # Clean draft uploads
     from(u in Upload, where: u.status == ^:draft and u.updated_at < ago(36, "hour"))
@@ -52,7 +73,9 @@ defmodule Horizon.StorageManager do
     # Clean new uploads
     from(u in Upload, where: u.status == ^:new and u.updated_at < ago(24, "hour"))
     |> Repo.delete_all
+  end
 
+  def clean_orphans_blobs do
     # Clean orphan blobs
     from(
       b in Blob, 
@@ -61,12 +84,37 @@ defmodule Horizon.StorageManager do
       where: is_nil(u.id)
     )
     |> Repo.all
+    |> Enum.each(&StorageManager.unstore!/1)
+  end
+
+  def send_uploads_to_wasabi() do
+    from(
+      b1 in Blob, 
+      select: %{sha256: b1.sha256, remote_id: b1.remote_id, storage: b1.storage},
+      left_join: b2 in Blob,
+      on: b1.sha256 == b2.sha256 and b2.storage == ^:wasabi,
+      left_join: u in Upload,
+      on: b1.sha256 == u.sha256,
+      where: b1.storage == ^:mirage and not is_nil(u.id) and is_nil(b2.remote_id)
+    )
+    |> Repo.all
     |> Enum.each(fn b ->
-      Repo.transaction(fn ->
-        Repo.delete!(b)
-        Mirage.unstore!(b)
-      end)
+      path = Mirage.get_blob_path(b)
+      case File.exists?(path) do
+        true ->
+           Wasabi.store!(%{path: path}, %{sha256: b.sha256})
+        false ->
+          Logger.error("File for blob doesn't exist : #{b.sha256}")
+      end
     end)
+  end
+
+  def unstore!(%{storage: :mirage} = b) do
+    Mirage.unstore!(b)
+  end
+
+  def unstore!(%{storage: :wasabi} = b) do
+    Wasabi.unstore!(b)
   end
 
   def new!(params) do

@@ -15,7 +15,8 @@ defmodule Horizon.Application do
       # Starts a worker by calling: Horizon.Worker.start_link(arg)
       # {Horizon.Worker, arg},
       Horizon.DownloadManager,
-      Horizon.StorageManager
+      Horizon.StorageManager,
+      Horizon.StorageManager.Provider.Wasabi.UploadManager,
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

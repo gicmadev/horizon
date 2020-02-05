@@ -51,7 +51,10 @@ defmodule Horizon.MixProject do
       {:jose, "~> 1.9"},
       {:corsica, "~> 1.0"},
       {:taglib, "~> 0.2"},
-      {:tus, "~> 0.1.0"}
+      {:tus, "~> 0.1.0"},
+      {:ex_aws, "~> 2.0"},
+      {:ex_aws_s3, "~> 2.0"},
+      {:sweet_xml, "~> 0.6.6"}
     ]
   end
 

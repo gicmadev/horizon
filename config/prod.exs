@@ -84,6 +84,8 @@ config :horizon, Horizon.SecureTokens,
     """
   }
 
+config :ex_aws, :s3, bucket: "horizon-prod"
+
 # Alternatively, you can configure exactly which server to
 # start per endpoint:
 #

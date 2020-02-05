@@ -11,6 +11,14 @@ defmodule Horizon.DownloadManager.Download do
   def start_link(url, path, expected_size),
     do: GenServer.start_link(__MODULE__, {url, path, expected_size}, name: via_tuple(url))
 
+  def get_status(url) do
+    GenServer.call(via_tuple(url), :status)
+  end
+
+  def get_download_stream(url) do
+    GenServer.call(via_tuple(url), :get_download_stream)
+  end
+
   ## Callbacks
   def init({url, path, expected_size}) do
     Logger.info("Starting download of #{inspect(url)}")
@@ -23,14 +31,6 @@ defmodule Horizon.DownloadManager.Download do
       err ->
         {:errored, err}
     end
-  end
-
-  def get_status(url) do
-    GenServer.call(via_tuple(url), :status)
-  end
-
-  def get_download_stream(url) do
-    GenServer.call(via_tuple(url), :get_download_stream)
   end
 
   def handle_call(:status, _from, state) do

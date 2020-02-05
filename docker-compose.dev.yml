@@ -16,10 +16,12 @@ services:
       - podcloud
     ports:
       - 4000:4000
+    env_file:
+      - ./.env.development.local
     labels:
-        traefik.frontend.rule: "Host:warp.horizon.gicma.dev.test,horizon.gicma.dev.test"
-        traefik.frontend.priority: 999999
-        traefik.port: 4000
+      traefik.frontend.rule: "Host:warp.horizon.gicma.dev.test,horizon.gicma.dev.test"
+      traefik.frontend.priority: 999999
+      traefik.port: 4000
 
   webpack:
     image: node:10
