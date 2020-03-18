@@ -19,6 +19,11 @@ const Uploader = props => {
 
   return (
     <ContentBox>
+      <Typography variant="caption" align="justify">
+        Malgré le soin apporté à l'élaboration de notre service, aucun système
+        n'est fiable à 100%, nous vous conseillons de conserver les fichiers
+        originaux par précaution.
+      </Typography>
       <InputsBox>
         <FilePond
           {...useUploaderConfig(props)}
