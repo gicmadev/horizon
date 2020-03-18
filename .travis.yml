@@ -21,7 +21,7 @@ before_deploy:
   -in .deploy_key.enc -out /tmp/deploy_key -d
 - chmod 600 /tmp/deploy_key
 - ssh-add /tmp/deploy_key
-- ssh-keyscan "$SERVER" >> ~/.ssh/known_hosts
+- ssh-keyscan -p 2424 "$SERVER" >> ~/.ssh/known_hosts
 deploy:
 - provider: script
   script: "./deploy.sh"
