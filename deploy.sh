@@ -37,6 +37,7 @@ mv docker-compose.prod.yml docker-compose.yml
 
 echo "Linking shared data"
 ln -nfs $BASE/shared/downloads $BASE/releases/$RELEASEN/
+ln -nfs $BASE/shared/.env.production.local $BASE/releases/$RELEASEN/
 ln -nfs $BASE/shared/prod.secret.exs $BASE/releases/$RELEASEN/
 
 echo "Pulling new version from docker hub"

@@ -10,6 +10,8 @@ services:
     networks:
       - traefik
       - horizon
+    env_file:
+      - ./.env.production.local
     labels:
         traefik.frontend.rule: "Host:warp.horizon.gicma.dev,horizon.gicma.dev"
         traefik.enable: true
