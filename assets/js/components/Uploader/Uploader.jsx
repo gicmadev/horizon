@@ -19,13 +19,6 @@ const Uploader = props => {
 
   return (
     <ContentBox>
-      <Typography variant="caption" align="justify">
-        En envoyant votre fichier sur nos serveurs pendant la phase de beta,
-        vous acceptez le risque que votre fichier soit supprimé ou perdu,
-        volontairement ou involontairement. Nous ferons notre possible pour
-        éviter toute perte de données, mais nous vous conseillons de conserver
-        les fichiers originaux par précaution.
-      </Typography>
       <InputsBox>
         <FilePond
           {...useUploaderConfig(props)}
