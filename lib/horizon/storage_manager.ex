@@ -270,10 +270,7 @@ defmodule Horizon.StorageManager do
           /
           EXTRACT(
             epoch FROM (
-              CASE WHEN MAX(inserted_at) = MIN(inserted_at)
-              THEN (interval '12 month')
-              ELSE (MAX(inserted_at) - MIN(inserted_at))
-              END
+              NOW() - MIN(inserted_at)
             )
           )
         ) as recent_speed,
@@ -282,7 +279,7 @@ defmodule Horizon.StorageManager do
       WHERE 
         inserted_at > date_trunc(
           'day', NOW() - interval '12 month'
-      ) AND status='ok'%ADD_OWNER_CLAUSE%;
+      ) AND status='ok' %ADD_OWNER_CLAUSE%;
       """ |> add_owner_clause(owner)
 
     results = Ecto.Adapters.SQL.query!(
@@ -312,6 +309,6 @@ defmodule Horizon.StorageManager do
   end
 
   defp add_owner_clause(query, _owner) do
-    query |> String.replace("%ADD_OWNER_CLAUSE%", "AND owner=$1")
+    query |> String.replace("%ADD_OWNER_CLAUSE%", " AND owner=$1")
   end
 end
