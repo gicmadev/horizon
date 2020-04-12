@@ -1,19 +1,23 @@
 defmodule Horizon.DownloadManager.Downloader do
-  alias HTTPoison.{AsyncHeaders, AsyncStatus, AsyncChunk, AsyncEnd}
+  alias HTTPoison.{AsyncHeaders, AsyncRedirect, AsyncStatus, AsyncChunk, AsyncEnd}
+
+  require Logger
 
   @wait_timeout 5000
 
   def run(opts) do
+    Logger.debug("Running downloader with opts #{inspect(opts)}")
+
     File.rm(opts.path)
 
     with {:ok, file} <- File.open(opts.path, [:write, :exclusive]),
-         {:ok, _request} <- HTTPoison.get(opts.url, %{}, stream_to: self()) do
+         {:ok, _req} <- do_request(opts.url) do
       opts = Map.put(opts, :file, file)
       do_download(opts)
     else
       {:error, reason} ->
         unless reason === :eexist do
-          File.rm!(opts.path)
+          File.rm(opts.path)
         end
 
         send(opts.download_pid, {:update_status, {:errored, reason}})
@@ -24,13 +28,32 @@ defmodule Horizon.DownloadManager.Downloader do
     end
   end
 
-  @doc false
-  def do_download(opts) do
+  defp do_request(url) do
+    Logger.debug("Starting GET request to #{url} with stream_to #{inspect(self())}")
+    req = HTTPoison.get(url, %{}, stream_to: self(), follow_redirect: true)
+    Logger.debug("#{inspect(req)}", label: "request")
+    req
+  end
+
+  defp do_download(opts) do
     receive do
-      response_chunk -> handle_response_chunk(response_chunk, opts)
+      response_chunk ->
+        handle_response_chunk(response_chunk, opts)
     after
-      @wait_timeout -> {:error, :timeout_failure}
+      @wait_timeout -> finish_download({:error, :timeout_failure}, opts)
     end
+  end
+
+  defp handle_response_chunk(%AsyncRedirect{to: to}, opts) do
+    Logger.debug("Redirecting to #{to}")
+
+    send(
+      opts.download_pid,
+      {:update_status, :redirecting}
+    )
+
+    do_request(to)
+    do_download(opts |> Map.put(:url, to))
   end
 
   defp handle_response_chunk(%AsyncStatus{code: 200}, opts) do
@@ -47,17 +70,36 @@ defmodule Horizon.DownloadManager.Downloader do
   end
 
   defp handle_response_chunk(%AsyncHeaders{headers: headers}, opts) do
-    content_length_header =
+    content_disposition_header =
       Enum.find(headers, fn {header_name, _value} ->
-        header_name == "Content-Length"
+        String.downcase(header_name) == "content-disposition"
       end)
 
-    if content_length_header do
-      {_, content_length} = content_length_header
+    content_length_header =
+      Enum.find(headers, fn {header_name, _value} ->
+        String.downcase(header_name) == "content-length"
+      end)
+
+    with {_, content_length} <- content_length_header do
+      Logger.debug("got content_length : #{content_length}")
 
       send(
         opts.download_pid,
         {:update_progress, {:content_length, String.to_integer(content_length)}}
+      )
+    end
+
+    with {_, cont_dis} <- content_disposition_header,
+         %{"filename" => filename} <-
+           Regex.named_captures(
+             ~r/filename=['"]?(?<filename>[^'";]+)['"]?/i,
+             cont_dis
+           ) do
+      Logger.debug("got filename : #{filename}")
+
+      send(
+        opts.download_pid,
+        {:update_progress, {:set_filename, filename}}
       )
     end
 
@@ -75,6 +117,7 @@ defmodule Horizon.DownloadManager.Downloader do
   defp handle_response_chunk(%AsyncEnd{}, opts), do: finish_download({:ok}, opts)
 
   defp finish_download(state, opts) do
+    Logger.debug("finish download with opts : #{inspect(opts)}")
     File.close(opts.file)
 
     case state do

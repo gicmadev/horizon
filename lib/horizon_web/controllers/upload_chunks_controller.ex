@@ -8,19 +8,21 @@ defmodule HorizonWeb.UploadChunksController do
   plug(HorizonWeb.Plugs.VerifyToken)
 
   # start upload optional callback
-  def on_begin_upload(file) do
-    :ok  # or {:error, reason} to reject the uplaod
+  def on_begin_upload(_file) do
+    # or {:error, reason} to reject the uplaod
+    :ok
   end
 
   # Completed upload optional callback
   def on_complete_upload(file) do
     Horizon.StorageManager.store!(
-      get_file_metadata(file, "upload_id"), 
+      get_file_metadata(file, "upload_id"),
       %{
-        path: Path.join(
-          Application.get_env(:tus, HorizonWeb.UploadChunksController)[:base_path],
-          file.path
-        ),
+        path:
+          Path.join(
+            Application.get_env(:tus, HorizonWeb.UploadChunksController)[:base_path],
+            file.path
+          ),
         filename: get_file_metadata(file, "filename")
       }
     )

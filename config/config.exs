@@ -17,6 +17,8 @@ config :horizon, HorizonWeb.Endpoint,
   render_errors: [view: HorizonWeb.ErrorView, accepts: ~w(json)],
   pubsub: [name: Horizon.PubSub, adapter: Phoenix.PubSub.PG2]
 
+config :horizon, Horizon.DownloadManager, dl_path: "/tmp/remote_download"
+
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
