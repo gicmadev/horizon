@@ -66,44 +66,81 @@ defmodule Horizon.DownloadManager.Downloader do
   end
 
   defp handle_response_chunk(%AsyncStatus{code: status_code}, opts) do
-    finish_download({:error, :unexpected_status_code, status_code}, opts)
+    finish_download({:error, {:unexpected_status_code, status_code}}, opts)
+  end
+
+  defp check_content_type(headers) do
+    [content_type | _] = String.split(headers["content-type"], ";")
+
+    if contype_forbidden(content_type) do
+      {:halt, content_type}
+    else
+      {:cont, content_type}
+    end
   end
 
   defp handle_response_chunk(%AsyncHeaders{headers: headers}, opts) do
-    content_disposition_header =
-      Enum.find(headers, fn {header_name, _value} ->
-        String.downcase(header_name) == "content-disposition"
-      end)
+    headers =
+      headers |> extract_headers(["content-type", "content-length", "content-disposition"])
 
-    content_length_header =
-      Enum.find(headers, fn {header_name, _value} ->
-        String.downcase(header_name) == "content-length"
-      end)
+    with {:halt, content_type} <- check_content_type(headers) do
+      finish_download({:error, {:unexpected_content_type, content_type}}, opts)
+    else
+      {:cont, _} ->
+        with content_length <- headers["content-length"],
+             true <- is_binary(content_length) do
+          Logger.debug("got content_length : #{content_length}")
 
-    with {_, content_length} <- content_length_header do
-      Logger.debug("got content_length : #{content_length}")
+          try do
+            send(
+              opts.download_pid,
+              {:update_progress, {:content_length, String.to_integer(content_length)}}
+            )
+          rescue
+            ArgumentError -> nil
+          end
+        end
 
-      send(
-        opts.download_pid,
-        {:update_progress, {:content_length, String.to_integer(content_length)}}
-      )
+        with cont_dis <- headers["content-disposition"],
+             true <- is_binary(cont_dis),
+             %{"filename" => filename} <-
+               Regex.named_captures(
+                 ~r/filename=['"]?(?<filename>[^'";]+)['"]?/i,
+                 cont_dis
+               ) do
+          Logger.debug("got filename : #{filename}")
+
+          send(
+            opts.download_pid,
+            {:update_progress, {:set_filename, filename}}
+          )
+        end
+
+        do_download(opts)
+
+      _ ->
+        finish_download({:error, :unknown}, opts)
     end
+  end
 
-    with {_, cont_dis} <- content_disposition_header,
-         %{"filename" => filename} <-
-           Regex.named_captures(
-             ~r/filename=['"]?(?<filename>[^'";]+)['"]?/i,
-             cont_dis
-           ) do
-      Logger.debug("got filename : #{filename}")
+  defp extract_headers(headers, keys \\ []) do
+    headers
+    |> Enum.reduce(
+      %{},
+      fn header = {header_name, value}, acc ->
+        clean_name = String.downcase(header_name)
 
-      send(
-        opts.download_pid,
-        {:update_progress, {:set_filename, filename}}
-      )
-    end
+        if Enum.member?(keys, clean_name) do
+          acc |> Map.put(clean_name, value)
+        else
+          acc
+        end
+      end
+    )
+  end
 
-    do_download(opts)
+  defp contype_forbidden(content_type) when is_binary(content_type) do
+    String.match?(content_type, ~r/text\/html/i)
   end
 
   defp handle_response_chunk(%AsyncChunk{chunk: data}, opts) do
@@ -121,13 +158,8 @@ defmodule Horizon.DownloadManager.Downloader do
     File.close(opts.file)
 
     case state do
-      {:error} ->
-        File.rm!(opts.path)
-
-        send(
-          opts.download_pid,
-          {:update_status, {:errored, :unknown}}
-        )
+      {:ok} ->
+        send(opts.download_pid, {:update_status, :finished})
 
       {:error, reason} ->
         File.rm!(opts.path)
@@ -137,8 +169,21 @@ defmodule Horizon.DownloadManager.Downloader do
           {:update_status, {:errored, reason}}
         )
 
+      {:error} ->
+        File.rm!(opts.path)
+
+        send(
+          opts.download_pid,
+          {:update_status, {:errored, :unknown}}
+        )
+
       _ ->
-        send(opts.download_pid, {:update_status, :finished})
+        File.rm!(opts.path)
+
+        send(
+          opts.download_pid,
+          {:update_status, {:crashed, :unknown}}
+        )
     end
   end
 end

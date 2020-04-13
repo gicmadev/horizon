@@ -55,7 +55,7 @@ defmodule Horizon.Schema.Upload do
   @doc false
   def fail_downloading(upload, error) do
     upload
-    |> cast(%{downloading_error: error}, [:downloading_error])
+    |> cast(%{downloading_error: Poison.encode!(error)}, [:downloading_error])
     |> set_status(:downloading_failed)
   end
 
@@ -69,7 +69,9 @@ defmodule Horizon.Schema.Upload do
         content_type: nil,
         sha256: nil,
         downloading_url: nil,
-        downloading_error: nil
+        downloading_error: nil,
+        artwork: nil,
+        duration: nil
       },
       [
         :filename,
@@ -77,7 +79,9 @@ defmodule Horizon.Schema.Upload do
         :content_type,
         :sha256,
         :downloading_url,
-        :downloading_error
+        :downloading_error,
+        :artwork,
+        :duration
       ]
     )
     |> set_status(:new)

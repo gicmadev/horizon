@@ -86,7 +86,8 @@ defmodule Horizon.DownloadManager.Download do
       :noreply,
       {
         status,
-        request,
+        request
+        |> set_expected_size_if_less(bytes),
         progress
         |> Map.update(:downloaded, 0, &(&1 + bytes))
         |> update_percent_downloaded
@@ -102,7 +103,7 @@ defmodule Horizon.DownloadManager.Download do
       {
         status,
         request
-        |> set_expected_size_if_zero(bytes),
+        |> set_expected_size_if_less(bytes),
         progress
         |> Map.put(:content_length, bytes)
       }
@@ -140,7 +141,9 @@ defmodule Horizon.DownloadManager.Download do
 
     Logger.error("Download of #{inspect(request.url)} ERRORED : #{inspect(reason)}")
 
-    request |> exec_callback(:on_download_failed)
+    request
+    |> add_error(reason)
+    |> exec_callback(:on_download_failed)
 
     {:stop, :normal, {:errored, request, progress}}
   end
@@ -150,7 +153,9 @@ defmodule Horizon.DownloadManager.Download do
 
     Logger.error("Download of #{inspect(request.url)} CRASHED")
 
-    request |> exec_callback(:on_download_failed)
+    request
+    |> add_error(reason)
+    |> exec_callback(:on_download_failed)
 
     {:stop, reason, {:crashed, request, progress}}
   end
@@ -169,6 +174,19 @@ defmodule Horizon.DownloadManager.Download do
 
   ## Private
 
+  defp add_error(request, error) do
+    request
+    |> Map.put(
+      :error,
+      case error do
+        {reason, detail} -> %{error: reason, detail: detail}
+        {reason} -> %{error: reason, detail: nil}
+        reason when is_atom(reason) or is_binary(reason) -> %{error: reason, detail: nil}
+        _ -> %{error: "unknown"}
+      end
+    )
+  end
+
   defp exec_callback(request, which) do
     Logger.debug("exec_callback")
     Logger.debug(inspect(request))
@@ -183,10 +201,10 @@ defmodule Horizon.DownloadManager.Download do
     end
   end
 
-  defp set_expected_size_if_zero(request, bytes) do
+  defp set_expected_size_if_less(request, bytes) do
     with %{opts: opts} <- request,
          exp_size <- Map.get(opts, :expected_size, 0),
-         true <- is_integer(exp_size) and exp_size > 0 do
+         true <- is_integer(exp_size) and exp_size > bytes do
       request
     else
       _ ->

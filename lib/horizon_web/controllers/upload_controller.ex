@@ -35,7 +35,7 @@ defmodule HorizonWeb.UploadController do
     conn |> send_ok_data(%{deleted: true})
   end
 
-  def get(conn, %{"upload_id" => upload_id}) do
+  def get(conn, params = %{"upload_id" => upload_id}) do
     Logger.debug("upload_id : #{upload_id}")
 
     {:ok, upload} = Horizon.StorageManager.get!(upload_id)
@@ -58,9 +58,8 @@ defmodule HorizonWeb.UploadController do
       end
 
     data =
-      with true <- upload.status == :downloading do
-        {status, _, progress} = Horizon.DownloadManager.get_status(upload.downloading_url)
-
+      with true <- upload.status == :downloading,
+           {status, _, progress} <- Horizon.DownloadManager.get_status(upload.downloading_url) do
         data
         |> Map.put(:progress, progress)
         |> Map.put(:downloading_status, status)
@@ -69,12 +68,33 @@ defmodule HorizonWeb.UploadController do
       end
 
     data =
-      with true <- upload.status == :downloading_failed do
-        data
-        |> Map.put(:downloading_error, upload.downloading_error)
+      with true <- upload.status == :downloading_failed,
+           {:ok, err_data} <- Jason.decode(upload.downloading_error) do
+        data |> Map.put(:downloading_error, err_data)
       else
         _ -> data
       end
+
+    Logger.debug("params: #{inspect(params)}")
+
+    drop_keys =
+      params
+      |> Map.get("without", "")
+      |> String.split(",")
+      |> Enum.map(&String.to_atom/1)
+
+    data = data |> Map.drop(drop_keys)
+
+    data =
+      data
+      |> Enum.reduce(%{}, fn {key, value}, acc ->
+        with false <- Enum.member?(drop_keys, key),
+             false <- is_nil(value) do
+          acc |> Map.put(key, value)
+        else
+          _ -> acc
+        end
+      end)
 
     conn |> send_ok_data(data)
   end
@@ -91,13 +111,13 @@ defmodule HorizonWeb.UploadController do
     with {:is_new, true} <- {:is_new, Horizon.StorageManager.is_new?(upload_id)},
          {:store_remote, {:ok, {:started, _, _}}} <-
            {:store_remote, Horizon.StorageManager.store_remote!(upload_id, url)} do
-      conn |> get(params)
+      conn |> get(params |> Map.put("without", "artwork"))
     else
       {:store_remote, {:error, {:not_found, _, _}}} ->
         conn |> send_error_data("error starting download")
 
       {:is_new, false} ->
-        conn |> get(params)
+        conn |> get(params |> Map.put("without", "artwork"))
 
       err ->
         Logger.error(inspect(err))

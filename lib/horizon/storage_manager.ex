@@ -245,7 +245,7 @@ defmodule Horizon.StorageManager do
     end)
   end
 
-  def fail_remote!(upload_id, error) do
+  def fail_remote!(upload_id, %{error: error}) do
     from(
       u in Upload,
       where: u.id == ^upload_id and u.status in [^:downloading]
