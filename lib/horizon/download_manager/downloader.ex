@@ -20,17 +20,23 @@ defmodule Horizon.DownloadManager.Downloader do
           File.rm(opts.path)
         end
 
-        send(opts.download_pid, {:update_status, {:errored, reason}})
+        opts = opts |> set_status({:errored, reason})
 
       _ ->
-        send(opts.download_pid, {:update_status, {:crashed, :unknown}})
-        {:error}
+        opts = opts |> set_status({:crashed, :unknown})
     end
   end
 
   defp do_request(url) do
     Logger.debug("Starting GET request to #{url} with stream_to #{inspect(self())}")
-    req = HTTPoison.get(url, %{}, stream_to: self(), follow_redirect: true)
+
+    req =
+      HTTPoison.get(url, %{},
+        stream_to: self(),
+        follow_redirect: true,
+        hackney: [force_redirect: true, max_redirect: 15]
+      )
+
     Logger.debug("#{inspect(req)}", label: "request")
     req
   end
@@ -47,26 +53,86 @@ defmodule Horizon.DownloadManager.Downloader do
   defp handle_response_chunk(%AsyncRedirect{to: to}, opts) do
     Logger.debug("Redirecting to #{to}")
 
-    send(
-      opts.download_pid,
-      {:update_status, :redirecting}
-    )
+    opts = opts |> set_status(:redirecting)
 
-    do_request(to)
-    do_download(opts |> Map.put(:url, to))
+    opts =
+      opts
+      |> Map.put(:url, to)
+      |> Map.update(:redirected, 0, &(&1 + 1))
+
+    if opts.redirected > 10 do
+      finish_download({:error, :too_many_redirect}, opts)
+    else
+      do_request(opts.url)
+      do_download(opts)
+    end
   end
 
-  defp handle_response_chunk(%AsyncStatus{code: 200}, opts) do
-    send(
-      opts.download_pid,
-      {:update_status, :downloading}
-    )
+  defp handle_response_chunk(%AsyncStatus{code: code}, opts) do
+    cond do
+      code in [200, 206] ->
+        opts = opts |> set_status(:downloading)
+        do_download(opts)
 
-    do_download(opts)
+      code in [303, 308] ->
+        # Manual redirect not handled by hackney
+        opts = opts |> set_status(:redirecting)
+        do_download(opts)
+
+      true ->
+        finish_download({:error, {:unexpected_status_code, code}}, opts)
+    end
   end
 
-  defp handle_response_chunk(%AsyncStatus{code: status_code}, opts) do
-    finish_download({:error, {:unexpected_status_code, status_code}}, opts)
+  defp handle_response_chunk(%AsyncHeaders{headers: headers}, opts) do
+    headers =
+      headers
+      |> extract_headers(["location", "content-type", "content-length", "content-disposition"])
+
+    loc = headers["location"]
+
+    if opts.status == :redirecting and is_binary(loc) and String.length(loc) do
+      handle_response_chunk(%AsyncRedirect{to: loc}, opts)
+    else
+      with {:halt, content_type} <- check_content_type(headers) do
+        finish_download({:error, {:unexpected_content_type, content_type}}, opts)
+      else
+        {:cont, _} ->
+          with content_length <- headers["content-length"],
+               true <- is_binary(content_length) do
+            Logger.debug("got content_length : #{content_length}")
+
+            try do
+              send(
+                opts.download_pid,
+                {:update_progress, {:content_length, String.to_integer(content_length)}}
+              )
+            rescue
+              ArgumentError -> nil
+            end
+          end
+
+          with cont_dis <- headers["content-disposition"],
+               true <- is_binary(cont_dis),
+               %{"filename" => filename} <-
+                 Regex.named_captures(
+                   ~r/filename=['"]?(?<filename>[^'";]+)['"]?/i,
+                   cont_dis
+                 ) do
+            Logger.debug("got filename : #{filename}")
+
+            send(
+              opts.download_pid,
+              {:update_progress, {:set_filename, filename}}
+            )
+          end
+
+          do_download(opts)
+
+        _ ->
+          finish_download({:error, :unknown}, opts)
+      end
+    end
   end
 
   defp check_content_type(headers) do
@@ -76,50 +142,6 @@ defmodule Horizon.DownloadManager.Downloader do
       {:halt, content_type}
     else
       {:cont, content_type}
-    end
-  end
-
-  defp handle_response_chunk(%AsyncHeaders{headers: headers}, opts) do
-    headers =
-      headers |> extract_headers(["content-type", "content-length", "content-disposition"])
-
-    with {:halt, content_type} <- check_content_type(headers) do
-      finish_download({:error, {:unexpected_content_type, content_type}}, opts)
-    else
-      {:cont, _} ->
-        with content_length <- headers["content-length"],
-             true <- is_binary(content_length) do
-          Logger.debug("got content_length : #{content_length}")
-
-          try do
-            send(
-              opts.download_pid,
-              {:update_progress, {:content_length, String.to_integer(content_length)}}
-            )
-          rescue
-            ArgumentError -> nil
-          end
-        end
-
-        with cont_dis <- headers["content-disposition"],
-             true <- is_binary(cont_dis),
-             %{"filename" => filename} <-
-               Regex.named_captures(
-                 ~r/filename=['"]?(?<filename>[^'";]+)['"]?/i,
-                 cont_dis
-               ) do
-          Logger.debug("got filename : #{filename}")
-
-          send(
-            opts.download_pid,
-            {:update_progress, {:set_filename, filename}}
-          )
-        end
-
-        do_download(opts)
-
-      _ ->
-        finish_download({:error, :unknown}, opts)
     end
   end
 
@@ -143,6 +165,15 @@ defmodule Horizon.DownloadManager.Downloader do
     String.match?(content_type, ~r/text\/html/i)
   end
 
+  defp set_status(opts, status) do
+    send(
+      opts.download_pid,
+      {:update_status, status}
+    )
+
+    opts |> Map.put(:status, status)
+  end
+
   defp handle_response_chunk(%AsyncChunk{chunk: data}, opts) do
     IO.binwrite(opts.file, data)
 
@@ -151,7 +182,10 @@ defmodule Horizon.DownloadManager.Downloader do
     do_download(opts)
   end
 
-  defp handle_response_chunk(%AsyncEnd{}, opts), do: finish_download({:ok}, opts)
+  defp handle_response_chunk(%AsyncEnd{}, opts = %{status: :redirecting}), do: do_download(opts)
+
+  defp handle_response_chunk(%AsyncEnd{}, opts),
+    do: finish_download({:ok}, opts)
 
   defp finish_download(state, opts) do
     Logger.debug("finish download with opts : #{inspect(opts)}")
@@ -159,31 +193,21 @@ defmodule Horizon.DownloadManager.Downloader do
 
     case state do
       {:ok} ->
-        send(opts.download_pid, {:update_status, :finished})
+        opts = opts |> set_status(:finished)
 
       {:error, reason} ->
         File.rm!(opts.path)
 
-        send(
-          opts.download_pid,
-          {:update_status, {:errored, reason}}
-        )
+        opts = opts |> set_status({:errored, reason})
 
       {:error} ->
         File.rm!(opts.path)
-
-        send(
-          opts.download_pid,
-          {:update_status, {:errored, :unknown}}
-        )
+        opts = opts |> set_status({:errored, :unknown})
 
       _ ->
         File.rm!(opts.path)
 
-        send(
-          opts.download_pid,
-          {:update_status, {:crashed, :unknown}}
-        )
+        opts = opts |> set_status({:crashed, :unknown})
     end
   end
 end

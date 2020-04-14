@@ -111,18 +111,34 @@ defmodule HorizonWeb.UploadController do
     with {:is_new, true} <- {:is_new, Horizon.StorageManager.is_new?(upload_id)},
          {:store_remote, {:ok, {:started, _, _}}} <-
            {:store_remote, Horizon.StorageManager.store_remote!(upload_id, url)} do
-      conn |> get(params |> Map.put("without", "artwork"))
+      conn
+      |> put_status(201)
+      |> send_ok_data()
     else
       {:store_remote, {:error, {:not_found, _, _}}} ->
         conn |> send_error_data("error starting download")
 
       {:is_new, false} ->
-        conn |> get(params |> Map.put("without", "artwork"))
+        conn |> redirect_to_upload(params)
 
       err ->
         Logger.error(inspect(err))
         conn |> send_error_data("unknown error")
     end
+  end
+
+  defp redirect_to_upload(conn, params = %{"upload_id" => upload_id}) do
+    conn
+    |> put_status(303)
+    |> redirect(
+      to:
+        Routes.upload_path(
+          conn,
+          :get,
+          upload_id,
+          without: params |> Map.get("without", "artwork")
+        )
+    )
   end
 
   defp send_ok_data(conn, data \\ %{}, status \\ 200) do
