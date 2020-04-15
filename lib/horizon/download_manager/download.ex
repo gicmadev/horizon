@@ -19,7 +19,7 @@ defmodule Horizon.DownloadManager.Download do
     data = Registry.lookup(@registry, url)
     Logger.debug("hello le status voila les data : #{inspect(data)}")
 
-    with [{pid, _}] <- data do
+    with [{_pid, _}] <- data do
       GenServer.call(via_tuple(url), :status)
     else
       _ -> {:not_found, %{}, %{}}
@@ -34,25 +34,29 @@ defmodule Horizon.DownloadManager.Download do
   def init({url, opts}) do
     Logger.info("starting download of #{inspect(url)}")
 
-    case spawn_downloader(url, opts.path) do
+    opts =
+      opts
+      |> Map.put(
+        :filename,
+        with %URI{path: url_path} <- URI.parse(url),
+             url_filename <- Path.basename(url_path),
+             true <- String.length(url_filename) > 0 do
+          url_filename
+        else
+          _ -> Path.basename(opts.path)
+        end
+      )
+
+    case spawn_downloader(url, opts) do
       {:ok, _pid} ->
         Logger.info("started download of #{inspect(url)}")
-
-        filename =
-          with %URI{path: url_path} <- URI.parse(url),
-               url_filename <- Path.basename(url_path),
-               true <- String.length(url_filename) > 0 do
-            url_filename
-          else
-            _ -> Path.basename(opts.path)
-          end
 
         {:ok,
          {:started,
           %{
             url: url,
             path: opts.path,
-            filename: filename,
+            filename: opts.filename,
             opts: opts
           }, %{}}}
 
@@ -237,10 +241,11 @@ defmodule Horizon.DownloadManager.Download do
   defp via_tuple(url),
     do: {:via, Registry, {@registry, url}}
 
-  defp spawn_downloader(url, path) do
+  defp spawn_downloader(url, %{path: path, filename: filename}) do
     opts = %{
       download_pid: self(),
       path: path,
+      filename: filename,
       url: url
     }
 
