@@ -5,13 +5,14 @@ import Uploader from "../Uploader";
 import RemoteURL from "../RemoteURL";
 
 const UploaderBox = props => {
-  const { serverUrl, uploadId, token, url, beforeDelete } = props;
+  const { serverUrl, uploadId, token, url, urlImport, beforeDelete } = props;
 
   const [files, setFiles] = useState([]);
   const [mode, setMode] = useState("upload");
 
   const [horizonUrl, setHorizonUrl] = useState("");
   const [onlineUrl, setOnlineUrl] = useState("");
+  const [onlineUrlImport, setOnlineUrlImport] = useState(!!urlImport);
 
   const toggleMode = () => setMode(mode === "upload" ? "online" : "upload");
 
@@ -65,6 +66,8 @@ const UploaderBox = props => {
           hasHorizonUrl={horizonUrl.length > 0}
           onlineUrl={onlineUrl}
           setOnlineUrl={setOnlineUrl}
+          onlineUrlImport={onlineUrlImport}
+          setOnlineUrlImport={setOnlineUrlImport}
           toggleMode={toggleMode}
         />
       )}

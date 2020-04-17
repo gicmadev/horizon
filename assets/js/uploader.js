@@ -9,6 +9,7 @@ window.loadHorizonUploader = (
   uploadId,
   token,
   url,
+  urlImport,
   beforeDelete = (next, error) => next()
 ) => {
   ReactDOM.render(
@@ -17,6 +18,7 @@ window.loadHorizonUploader = (
       uploadId={uploadId}
       token={token}
       url={url}
+      urlImport={urlImport}
       beforeDelete={beforeDelete}
     />,
     element
