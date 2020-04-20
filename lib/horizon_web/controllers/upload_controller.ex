@@ -58,13 +58,19 @@ defmodule HorizonWeb.UploadController do
       end
 
     data =
-      with true <- upload.status == :downloading,
-           {status, _, progress} <- Horizon.DownloadManager.get_status(upload.downloading_url) do
-        data
-        |> Map.put(:progress, progress)
-        |> Map.put(:downloading_status, status)
-      else
-        _ -> data
+      try do
+        with true <- upload.status == :downloading,
+             {status, _, progress} <- Horizon.DownloadManager.get_status(upload.downloading_url) do
+          data
+          |> Map.put(:progress, progress)
+          |> Map.put(:downloading_status, status)
+        else
+          _ -> data
+        end
+      catch
+        :exit, value ->
+          IO.inspect({:caught_an_exit, value})
+          data
       end
 
     data =
@@ -153,7 +159,7 @@ defmodule HorizonWeb.UploadController do
     conn |> send_json(Map.merge(%{error: true}, data), status)
   end
 
-  defp send_json(conn, data, status \\ 200) do
+  defp send_json(conn, data, status) do
     conn
     |> Plug.Conn.put_resp_header("content-type", "application/json; charset=utf-8")
     |> Plug.Conn.send_resp(status, Poison.encode!(data, pretty: true))

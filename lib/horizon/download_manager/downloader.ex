@@ -131,7 +131,7 @@ defmodule Horizon.DownloadManager.Downloader do
   defp check_redirect_loop(_), do: {:cont}
 
   defp send_progress(req = %{download_pid: pid}, size) when is_integer(size) do
-    send(pid, {:update_progress, {:downloaded_bytes, size}})
+    send(pid, {:update_progress, {:add_downloaded_bytes, size}})
 
     req
   end
@@ -181,7 +181,8 @@ defmodule Horizon.DownloadManager.Downloader do
     Logger.debug("got content_length : #{content_length}")
 
     try do
-      req |> Map.put(:content_length, String.to_integer(content_length))
+      req
+      |> Map.put(:content_length, String.to_integer(content_length))
     rescue
       ArgumentError -> req
     end
@@ -238,7 +239,8 @@ defmodule Horizon.DownloadManager.Downloader do
   defp check_content_type(_), do: {:cont, "application/octet-stream"}
 
   defp contype_forbidden(content_type) when is_binary(content_type) do
-    String.match?(content_type, ~r/text\/html/i)
+    String.match?(content_type, ~r/text\/html/i) ||
+      String.match?(content_type, ~r/application\/xml/i)
   end
 
   defp finish_download(req, state) do
@@ -269,6 +271,8 @@ defmodule Horizon.DownloadManager.Downloader do
   defp is_present_string(_), do: false
 
   defp sync_to_download(req) do
+    Logger.debug("sync_to_download : #{inspect(req)}")
+
     with filename <- Map.get(req, :filename),
          true <- is_present_string(filename) do
       send(
@@ -280,6 +284,8 @@ defmodule Horizon.DownloadManager.Downloader do
     with content_length <- Map.get(req, :content_length),
          true <- is_integer(content_length),
          true <- content_length >= 0 do
+      Logger.debug("sending cl : #{inspect(content_length)}")
+
       send(
         req.download_pid,
         {:update_progress, {:set_content_length, content_length}}

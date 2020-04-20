@@ -83,7 +83,7 @@ defmodule Horizon.DownloadManager.Download do
     }
   end
 
-  def handle_info({:update_progress, {:downloaded_bytes, bytes}}, state) do
+  def handle_info({:update_progress, {:add_downloaded_bytes, bytes}}, state) do
     {status, request, progress} = state
 
     {
@@ -99,8 +99,10 @@ defmodule Horizon.DownloadManager.Download do
     }
   end
 
-  def handle_info({:update_progress, {:content_length, bytes}}, state) do
+  def handle_info({:update_progress, {:set_content_length, bytes}}, state) do
     {status, request, progress} = state
+
+    Logger.debug("content lenght : #{inspect(bytes)}")
 
     {
       :noreply,
@@ -221,7 +223,7 @@ defmodule Horizon.DownloadManager.Download do
   end
 
   defp update_percent_downloaded(progress = %{downloaded: dl, content_length: tl}) do
-    # Logger.debug("trying to update percent_download with progress : #{inspect(progress)}")
+    Logger.debug("trying to update percent_download with progress : #{inspect(progress)}")
 
     progress
     |> Map.put(
@@ -234,6 +236,8 @@ defmodule Horizon.DownloadManager.Download do
   end
 
   defp update_percent_downloaded(progress) do
+    Logger.debug("inspect : #{inspect(progress)}")
+
     progress
     |> Map.put(:percent, nil)
   end
