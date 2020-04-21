@@ -18,6 +18,8 @@ services:
       - 4000:4000
     env_file:
       - ./.env.development.local
+    environment:
+      MIX_HOME: /var/run/.mix
     labels:
       traefik.frontend.rule: "Host:warp.horizon.gicma.dev.test,horizon.gicma.dev.test"
       traefik.frontend.priority: 999999
@@ -63,6 +65,3 @@ networks:
     external: true
   traefik:
     external: true
-
-volumes:
-  mix:

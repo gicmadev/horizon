@@ -2,6 +2,8 @@ defmodule Horizon.Repo.Migrations.CreateFiles do
   use Ecto.Migration
 
   def change do
+    execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
+
     UploadStatusEnum.create_type()
 
     # Run as admin in db :

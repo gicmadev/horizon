@@ -24,7 +24,6 @@ defmodule Horizon.StorageManager do
     )
   end
 
-
   @clean_uploads_interval 60 * 60 * 1_000
   @wasabi_uploads_interval 3 * 60 * 1_000
 
@@ -64,32 +63,31 @@ defmodule Horizon.StorageManager do
     {:noreply, Map.merge(state, %{last_wasabi_uploads_at: :calendar.local_time()})}
   end
 
-
   def clean_uploads do
     # Clean draft uploads
     from(u in Upload, where: u.status == ^:draft and u.updated_at < ago(36, "hour"))
-    |> Repo.delete_all
+    |> Repo.delete_all()
 
     # Clean new uploads
     from(u in Upload, where: u.status == ^:new and u.updated_at < ago(24, "hour"))
-    |> Repo.delete_all
+    |> Repo.delete_all()
   end
 
   def clean_orphans_blobs do
     # Clean orphan blobs
     from(
-      b in Blob, 
+      b in Blob,
       left_join: u in Upload,
       on: b.sha256 == u.sha256,
       where: is_nil(u.id)
     )
-    |> Repo.all
+    |> Repo.all()
     |> Enum.each(&StorageManager.unstore!/1)
   end
 
   def send_uploads_to_wasabi() do
     from(
-      b1 in Blob, 
+      b1 in Blob,
       select: %{sha256: b1.sha256, remote_id: b1.remote_id, storage: b1.storage},
       left_join: b2 in Blob,
       on: b1.sha256 == b2.sha256 and b2.storage == ^:wasabi,
@@ -97,12 +95,14 @@ defmodule Horizon.StorageManager do
       on: b1.sha256 == u.sha256,
       where: b1.storage == ^:mirage and not is_nil(u.id) and is_nil(b2.remote_id)
     )
-    |> Repo.all
+    |> Repo.all()
     |> Enum.each(fn b ->
       path = Mirage.get_blob_path(b)
+
       case File.exists?(path) do
         true ->
-           Wasabi.store!(%{path: path}, %{sha256: b.sha256})
+          Wasabi.store!(%{path: path}, %{sha256: b.sha256})
+
         false ->
           Logger.error("File for blob doesn't exist : #{b.sha256}")
       end
@@ -127,7 +127,11 @@ defmodule Horizon.StorageManager do
   end
 
   def store!(upload_id, file) do
-    upload = Repo.get_by!(Upload, id: upload_id, status: :new)
+    upload =
+      from(u in Upload,
+        where: u.id == ^upload_id and u.status in [^:new, ^:downloading]
+      )
+      |> Repo.one!()
 
     new_path = "#{file.path}#{:filename.extension(file.filename)}"
 
@@ -142,22 +146,25 @@ defmodule Horizon.StorageManager do
       filename: file.filename,
       content_type: MIME.from_path(file.filename),
       sha256: sha256,
-      content_length: size,
+      content_length: size
     }
 
-    upload_data = case Taglib.new(file.path) do
-      {:ok, tags} -> 
-        Map.merge(upload_data, %{
-          duration: Taglib.duration(tags),
-          artwork: case Taglib.artwork(tags) do
-            {mimetype, binart} -> "data:#{mimetype};base64,#{Base.encode64(binart)}"
-            _ -> nil
-          end
-        })
-      err -> 
-        Logger.error("Error inspecting taglib for #{file.path} : #{inspect err}")
-        upload_data
-    end
+    upload_data =
+      case Taglib.new(file.path) do
+        {:ok, tags} ->
+          Map.merge(upload_data, %{
+            duration: Taglib.duration(tags),
+            artwork:
+              case Taglib.artwork(tags) do
+                {mimetype, binart} -> "data:#{mimetype};base64,#{Base.encode64(binart)}"
+                _ -> nil
+              end
+          })
+
+        err ->
+          Logger.error("Error inspecting taglib for #{file.path} : #{inspect(err)}")
+          upload_data
+      end
 
     {:ok, _} =
       Repo.transaction(fn ->
@@ -168,16 +175,21 @@ defmodule Horizon.StorageManager do
 
         Mirage.store!(file, upload)
 
-        File.rm!(file.path) # remove temp file
+        # remove temp file
+        File.rm!(file.path)
       end)
 
     {:ok, upload}
   end
 
   def revert!(upload_id) do
-    {:ok, _} = from(u in Upload, where: u.id == ^upload_id and u.status in [^:new, ^:draft]) 
-               |> Repo.one!
-               |> reset!
+    {:ok, _} =
+      from(u in Upload,
+        where:
+          u.id == ^upload_id and u.status in [^:new, ^:downloading, ^:downloading_failed, ^:draft]
+      )
+      |> Repo.one!()
+      |> reset!
 
     {:ok, :reverted}
   end
@@ -190,27 +202,63 @@ defmodule Horizon.StorageManager do
 
   def clear_bucket!(bucket_id) do
     from(u in Upload, where: u.bucker == ^bucket_id)
-    |> Repo.delete_all
+    |> Repo.delete_all()
   end
 
   defp reset!(upload) do
     Repo.transaction(fn ->
       Upload.reset(upload)
-      |> Repo.update!
+      |> Repo.update!()
     end)
   end
 
   def burn!(upload_id) do
     Repo.get!(Upload, upload_id)
-    |> Upload.burn
-    |> Repo.update!
+    |> Upload.burn()
+    |> Repo.update!()
 
     {:ok, :burnt}
   end
 
+  def store_remote!(upload_id, url) do
+    Repo.transaction(fn ->
+      from(
+        u in Upload,
+        where: u.id == ^upload_id and u.status in [^:new]
+      )
+      |> Repo.one!()
+      |> Upload.downloading(url)
+      |> Repo.update!()
+
+      dl =
+        Horizon.DownloadManager.download(
+          url,
+          on_download_complete: &Horizon.StorageManager.store!(upload_id, &1),
+          on_download_failed: &Horizon.StorageManager.fail_remote!(upload_id, &1)
+        )
+
+      with {:started, _, _} <- dl do
+        dl
+      else
+        status -> Repo.rollback(status)
+      end
+    end)
+  end
+
+  def fail_remote!(upload_id, %{error: error}) do
+    from(
+      u in Upload,
+      where: u.id == ^upload_id and u.status in [^:downloading]
+    )
+    |> Repo.one!()
+    |> Upload.fail_downloading(error)
+    |> Repo.update!()
+  end
+
   def download!(upload_id) do
     case Upload.get_upload_and_blobs(upload_id) do
-      [] -> nil
+      [] ->
+        nil
 
       blobs ->
         mirage_blob = Enum.find(blobs, fn a -> a.storage === :mirage end)
@@ -225,44 +273,60 @@ defmodule Horizon.StorageManager do
           raise "not yet implemented"
         end
     end
-
   end
 
   def get!(upload_id) do
-    upload = from(u in Upload, where: u.id == ^upload_id and u.status != ^:new) |> Repo.one!
+    upload =
+      from(u in Upload, where: u.id == ^upload_id and u.status != ^:new)
+      |> Repo.one!()
 
     {:ok, upload}
+  end
+
+  def is_new?(upload_id) do
+    from(u in Upload, where: u.id == ^upload_id and u.status == ^:new)
+    |> Repo.exists?()
   end
 
   def status(upload_id) do
     blobs = Upload.get_upload_and_blobs(upload_id)
 
-    %{filename: filename, status: status} = List.first(blobs)
-
-    %{filename: filename, status: status, storages: Enum.map(blobs, fn a -> a.storage end)}
+    with %{filename: filename, status: status} <- List.first(blobs) do
+      %{
+        filename: filename,
+        status: status,
+        storages: Enum.map(blobs, fn a -> a.storage end)
+      }
+    else
+      nil -> %{}
+    end
   end
 
   def storage_status(owner \\ nil) do
-    query = """
-      SELECT 
-        bucket as feed_id, 
-        CEIL(SUM(content_length))::BIGINT AS total_size, 
-        SUM(duration) as total_duration, 
-        COUNT(owner) as episodes_count 
-      FROM public.uploads 
-      WHERE status='ok'%ADD_OWNER_CLAUSE%
-      GROUP BY bucket;
-    """ |> add_owner_clause(owner)
+    query =
+      """
+        SELECT 
+          bucket as feed_id, 
+          CEIL(SUM(content_length))::BIGINT AS total_size, 
+          SUM(duration) as total_duration, 
+          COUNT(owner) as episodes_count 
+        FROM public.uploads 
+        WHERE status='ok'%ADD_OWNER_CLAUSE%
+        GROUP BY bucket;
+      """
+      |> add_owner_clause(owner)
 
-    results = Ecto.Adapters.SQL.query!(
-      Horizon.Repo, 
-      query,
-      Enum.reject([owner], &is_nil/1)
-    )
+    results =
+      Ecto.Adapters.SQL.query!(
+        Horizon.Repo,
+        query,
+        Enum.reject([owner], &is_nil/1)
+      )
 
-    feeds = results.rows |> Enum.map(fn row -> Enum.zip(results.columns, row) |> Map.new end)
+    feeds = results.rows |> Enum.map(fn row -> Enum.zip(results.columns, row) |> Map.new() end)
 
-    query = """
+    query =
+      """
       SELECT
         CEIL(SUM(content_length))::BIGINT AS recent_size,
         CEIL(
@@ -280,18 +344,21 @@ defmodule Horizon.StorageManager do
         inserted_at > date_trunc(
           'day', NOW() - interval '12 month'
       ) AND status='ok' %ADD_OWNER_CLAUSE%;
-      """ |> add_owner_clause(owner)
+      """
+      |> add_owner_clause(owner)
 
-    results = Ecto.Adapters.SQL.query!(
-      Horizon.Repo,
-      query,
-      Enum.reject([owner], &is_nil/1)
-    )
+    results =
+      Ecto.Adapters.SQL.query!(
+        Horizon.Repo,
+        query,
+        Enum.reject([owner], &is_nil/1)
+      )
 
-    resp = results.rows 
-           |> Enum.map(fn row -> Enum.zip(results.columns, row) |> Map.new end) 
-           |> List.first 
-           |> Map.merge(%{feeds: feeds})
+    resp =
+      results.rows
+      |> Enum.map(fn row -> Enum.zip(results.columns, row) |> Map.new() end)
+      |> List.first()
+      |> Map.merge(%{feeds: feeds})
 
     {:ok, resp}
   end
