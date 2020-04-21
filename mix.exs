@@ -46,6 +46,7 @@ defmodule Horizon.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:httpoison, "~> 1.5"},
+      {:hackney, "~> 1.15.2"},
       {:mime, "~> 1.2"},
       {:joken, "~> 2.0"},
       {:jose, "~> 1.9"},
@@ -54,7 +55,8 @@ defmodule Horizon.MixProject do
       {:tus, "~> 0.1.0"},
       {:ex_aws, "~> 2.0"},
       {:ex_aws_s3, "~> 2.0"},
-      {:sweet_xml, "~> 0.6.6"}
+      {:sweet_xml, "~> 0.6.6"},
+      {:credo, "~> 1.3", only: [:dev, :test], runtime: false}
     ]
   end
 

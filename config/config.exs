@@ -14,8 +14,10 @@ config :horizon,
 config :horizon, HorizonWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "iHQ8Ph3E8lUDx0Q0OrOLryh7xjbjEtE2XLUJeqJ0eBfFHbiFQUuLBOX6btHQY9RC",
-  render_errors: [view: HorizonWeb.ErrorView, accepts: ~w(json)],
-  pubsub: [name: Horizon.PubSub, adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: Horizon.PubSub, adapter: Phoenix.PubSub.PG2],
+  render_errors: [view: HorizonWeb.ErrorView, format: "json", accepts: ~w(json)]
+
+config :horizon, Horizon.DownloadManager, dl_path: "/tmp/remote_download"
 
 # Configures Elixir's Logger
 config :logger, :console,

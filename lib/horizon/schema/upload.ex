@@ -23,6 +23,9 @@ defmodule Horizon.Schema.Upload do
     field :bucket, :string, size: 24
     field :owner, :string, size: 24
 
+    field :downloading_url, :string
+    field :downloading_error, :string
+
     field :status, UploadStatusEnum
 
     timestamps()
@@ -40,9 +43,47 @@ defmodule Horizon.Schema.Upload do
   end
 
   @doc false
+  def downloading(upload, url) do
+    upload
+    |> cast(%{downloading_error: nil, downloading_url: url}, [
+      :downloading_error,
+      :downloading_url
+    ])
+    |> set_status(:downloading)
+  end
+
+  @doc false
+  def fail_downloading(upload, error) do
+    upload
+    |> cast(%{downloading_error: Poison.encode!(error)}, [:downloading_error])
+    |> set_status(:downloading_failed)
+  end
+
+  @doc false
   def reset(upload) do
     upload
-    |> cast(%{filename: nil, content_length: nil, content_type: nil, sha256: nil}, [:filename, :content_type, :sha256])
+    |> cast(
+      %{
+        filename: nil,
+        content_length: nil,
+        content_type: nil,
+        sha256: nil,
+        downloading_url: nil,
+        downloading_error: nil,
+        artwork: nil,
+        duration: nil
+      },
+      [
+        :filename,
+        :content_length,
+        :content_type,
+        :sha256,
+        :downloading_url,
+        :downloading_error,
+        :artwork,
+        :duration
+      ]
+    )
     |> set_status(:new)
   end
 

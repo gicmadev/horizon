@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from "react";
 
-import { Box, TextField, Button, Typography } from "@material-ui/core";
+import {
+  Box,
+  TextField,
+  Button,
+  FormControlLabel,
+  Checkbox,
+  Typography
+} from "@material-ui/core";
 
 import ContentBox from "../ContentBox";
 import InputsBox from "../InputsBox";
 
-const RemoteURL = ({ hasHorizonUrl, onlineUrl, setOnlineUrl, toggleMode }) => (
+const RemoteURL = ({
+  hasHorizonUrl,
+  onlineUrl,
+  setOnlineUrl,
+  onlineUrlImport,
+  setOnlineUrlImport,
+  toggleMode
+}) => (
   <ContentBox>
     <InputsBox>
       {hasHorizonUrl ? (
@@ -28,6 +42,21 @@ const RemoteURL = ({ hasHorizonUrl, onlineUrl, setOnlineUrl, toggleMode }) => (
         }}
         value={onlineUrl}
         onChange={ev => setOnlineUrl(ev.target.value)}
+      />
+      <input
+        type="hidden"
+        name="item[enclosure_attributes][meta_url_attributes][remote][remote_import]"
+        value={onlineUrlImport ? 1 : 0}
+      />
+      <FormControlLabel
+        control={
+          <Checkbox
+            onChange={ev => setOnlineUrlImport(ev.target.checked)}
+            checked={onlineUrlImport}
+          />
+        }
+        margin="normal"
+        label="Copier sur mon stockage podCloud Horizon"
       />
     </InputsBox>
     <Typography align="left">
