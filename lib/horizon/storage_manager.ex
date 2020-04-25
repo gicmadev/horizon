@@ -142,9 +142,11 @@ defmodule Horizon.StorageManager do
     %{size: size} = File.stat!(file.path)
     sha256 = get_sha256(file.path)
 
+    filename = file.filename |> clean_filename
+
     upload_data = %{
-      filename: file.filename,
-      content_type: MIME.from_path(file.filename),
+      filename: filename,
+      content_type: MIME.from_path(filename),
       sha256: sha256,
       content_length: size
     }
@@ -279,6 +281,7 @@ defmodule Horizon.StorageManager do
     upload =
       from(u in Upload, where: u.id == ^upload_id and u.status != ^:new)
       |> Repo.one!()
+      |> Map.update!(:filename, &clean_filename/1)
 
     {:ok, upload}
   end
@@ -293,7 +296,7 @@ defmodule Horizon.StorageManager do
 
     with %{filename: filename, status: status} <- List.first(blobs) do
       %{
-        filename: filename,
+        filename: clean_filename(filename),
         status: status,
         storages: Enum.map(blobs, fn a -> a.storage end)
       }
@@ -377,5 +380,9 @@ defmodule Horizon.StorageManager do
 
   defp add_owner_clause(query, _owner) do
     query |> String.replace("%ADD_OWNER_CLAUSE%", " AND owner=$1")
+  end
+
+  defp clean_filename(filename) when is_binary(filename) do
+    Regex.replace(~r{[\\/:"*?<>|]+}, URI.decode(filename), "_")
   end
 end

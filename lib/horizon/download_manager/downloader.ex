@@ -246,12 +246,13 @@ defmodule Horizon.DownloadManager.Downloader do
   defp finish_download(req, state) do
     Logger.debug("finish download with req : #{inspect(req)}")
 
-    if req.file, do: File.close(req.file)
-    unless state == {:ok}, do: File.rm!(req.path)
+    if Map.has_key?(req, :file), do: File.close(req.file)
+    unless state == {:ok}, do: File.rm(req.path)
 
     status =
       case state do
         {:ok} -> :finished
+        {:error, %HTTPoison.Error{reason: reason}} -> {:errored, reason}
         {:error, reason} -> {:errored, reason}
         {:error} -> {:errored, :unknown}
         {:crash, reason} -> {:crashed, reason}
