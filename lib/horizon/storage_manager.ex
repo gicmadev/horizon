@@ -385,4 +385,8 @@ defmodule Horizon.StorageManager do
   defp clean_filename(filename) when is_binary(filename) do
     Regex.replace(~r{[\\/:"*?<>|]+}, URI.decode(filename), "_")
   end
+
+  defp clean_filename(filename) do
+    filename
+  end
 end
