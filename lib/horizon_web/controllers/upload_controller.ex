@@ -124,6 +124,9 @@ defmodule HorizonWeb.UploadController do
       {:store_remote, {:error, {:not_found, _, _}}} ->
         conn |> send_error_data("error starting download")
 
+      {:store_remote, {:error, {:downloading, _, _}}} ->
+        conn |> redirect_to_upload(params)
+
       {:is_new, false} ->
         conn |> redirect_to_upload(params)
 
