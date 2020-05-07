@@ -223,8 +223,6 @@ defmodule Horizon.DownloadManager.Download do
   end
 
   defp update_percent_downloaded(progress = %{downloaded: dl, content_length: tl}) do
-    Logger.debug("trying to update percent_download with progress : #{inspect(progress)}")
-
     progress
     |> Map.put(
       :percent,
