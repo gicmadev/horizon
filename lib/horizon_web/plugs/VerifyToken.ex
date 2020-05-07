@@ -13,8 +13,6 @@ defmodule HorizonWeb.Plugs.VerifyToken do
     with {:ok, token} <- extract_token(conn),
          {:ok, claims} <- claims_for_conn(conn),
          {:ok, token} <- verify_token(token, claims) do
-      Logger.debug("token : #{inspect(token)}")
-
       conn
       |> Conn.assign(:token, token)
     else
@@ -33,8 +31,6 @@ defmodule HorizonWeb.Plugs.VerifyToken do
   defp claims_for_conn(conn) do
     claims = %{}
 
-    Logger.debug("claims before #{inspect(claims)}")
-
     ash_id =
       if Phoenix.Controller.action_name(conn) === :new do
         Map.get(conn.params, "source")
@@ -49,25 +45,19 @@ defmodule HorizonWeb.Plugs.VerifyToken do
         claims
       end
 
-    Logger.debug("claims after #{inspect(claims)}")
     {:ok, claims}
   end
 
   defp verify_token(token, claims) do
     keys = Application.get_env(:horizon, Horizon.SecureTokens)
-    Logger.debug("config : #{inspect(keys)}")
 
     {:ok, token_claims} = token |> Joken.peek_claims()
     token_issuer = token_claims["iss"]
-
-    Logger.debug("issuers : #{inspect(token_issuer)}")
 
     iss_key = String.to_atom(token_issuer)
 
     if Keyword.has_key?(keys, iss_key) do
       pem_data = keys[iss_key]
-
-      Logger.debug("pem data : #{inspect(pem_data)}")
 
       token_config = make_token_config(Map.merge(%{"iss" => token_issuer}, claims))
 
@@ -89,12 +79,9 @@ defmodule HorizonWeb.Plugs.VerifyToken do
         claims,
         config,
         fn {key, value}, config ->
-          Logger.debug("hello from reduce ! #{key}, #{value}")
-          config = config |> Joken.Config.add_claim(key, nil, &(&1 == value))
+          config |> Joken.Config.add_claim(key, nil, &(&1 == value))
         end
       )
-
-    Logger.debug("toto : #{inspect(config)}")
 
     config
   end
