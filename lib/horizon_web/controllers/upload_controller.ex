@@ -125,10 +125,10 @@ defmodule HorizonWeb.UploadController do
         conn |> send_error_data("error starting download")
 
       {:store_remote, {:error, {:downloading, _, _}}} ->
-        conn |> redirect_to_upload(params)
+        conn |> put_status(201) |> send_ok_data()
 
       {:is_new, false} ->
-        conn |> redirect_to_upload(params)
+        conn |> put_status(201) |> send_ok_data()
 
       err ->
         Logger.error(inspect(err))
