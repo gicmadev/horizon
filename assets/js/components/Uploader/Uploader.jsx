@@ -43,7 +43,8 @@ const Uploader = props => {
               résolu, vous pouvez{" "}
               <Link
                 href="#"
-                onClick={() => {
+                onClick={e => {
+                  e.preventDefault();
                   logger.log("clicking on contact us");
 
                   const form = document.createElement("form");
@@ -73,8 +74,6 @@ const Uploader = props => {
                   document.body.appendChild(form);
 
                   form.submit();
-
-                  return false;
                 }}
                 variant="body2"
               >
@@ -85,11 +84,11 @@ const Uploader = props => {
           ) : (
             <Link
               href="#"
-              onClick={() => {
+              onClick={e => {
+                e.preventDefault();
+
                 logger.log("clicking on has problem");
                 window.reloadUploader(true);
-
-                return false;
               }}
               variant="body2"
             >
