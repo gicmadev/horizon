@@ -73,6 +73,8 @@ const Uploader = props => {
                   document.body.appendChild(form);
 
                   form.submit();
+
+                  return false;
                 }}
                 variant="body2"
               >
@@ -86,6 +88,8 @@ const Uploader = props => {
               onClick={() => {
                 logger.log("clicking on has problem");
                 window.reloadUploader(true);
+
+                return false;
               }}
               variant="body2"
             >
