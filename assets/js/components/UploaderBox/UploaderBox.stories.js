@@ -9,7 +9,7 @@ storiesOf("UploaderBox", module)
   .addDecorator(withKnobs)
   .add("base", () => (
     <UploaderBox
-      serverUrl={"https://horizon.podcloud.test/"}
+      serverUrl={"https://horizon.gicma.dev.test/"}
       uploadId={text("Upload ID")}
       token={text("Upload JWT Token")}
       url={text("Known URL")}

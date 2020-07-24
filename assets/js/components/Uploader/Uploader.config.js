@@ -128,6 +128,9 @@ const useUploaderConfig = ({
         // and reset the variable
         delete_on_server = null;
 
+        if (typeof beforeDelete !== "function")
+          beforeDelete = (next, error) => next();
+
         return beforeDelete(
           () =>
             fetch([serverUrl, "upload", uploadId].join("/"), {

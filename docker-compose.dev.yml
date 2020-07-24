@@ -14,8 +14,6 @@ services:
     networks:
       - traefik
       - podcloud
-    ports:
-      - 4000:4000
     env_file:
       - ./.env.development.local
     environment:

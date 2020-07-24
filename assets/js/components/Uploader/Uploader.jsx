@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 
+import FileUploader from "../FileUploader";
 import { FilePond } from "react-filepond";
 
 import { Button, Typography, Link } from "@material-ui/core";
@@ -15,7 +16,7 @@ import useUploaderPhrases from "./Uploader.intl";
 import useUploaderConfig from "./Uploader.config";
 
 const Uploader = props => {
-  const { uploadId, token, horizonUrl, files, toggleMode } = props;
+  const { uploadId, serverUrl, token, horizonUrl, files, toggleMode } = props;
 
   return (
     <ContentBox>
@@ -25,6 +26,7 @@ const Uploader = props => {
         originaux par précaution.
       </Typography>
       <InputsBox>
+        <FileUploader {...{ serverUrl, uploadId, token }} />
         <FilePond
           {...useUploaderConfig(props)}
           {...useUploaderPhrases(props)}

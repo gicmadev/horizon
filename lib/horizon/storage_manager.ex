@@ -278,6 +278,8 @@ defmodule Horizon.StorageManager do
   end
 
   def get!(upload_id) do
+    Logger.debug("Getting this upload_id : #{upload_id}")
+
     upload =
       from(u in Upload, where: u.id == ^upload_id and u.status != ^:new)
       |> Repo.one!()

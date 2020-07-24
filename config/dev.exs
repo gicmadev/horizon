@@ -17,7 +17,7 @@ config :horizon, HorizonWeb.Endpoint,
   check_origin: false,
   debug_errors: true,
   watchers: [],
-  api_origins: [~r{^https?://(.*\.?)podcloud\.test$}]
+  api_origins: [~r{^https?://(.*\.?)podcloud\.test$}, ~r{^https?://(.*\.?)gicma\.dev\.test$}]
 
 config :horizon, Horizon.SecureTokens,
   test: %{
