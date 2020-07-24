@@ -44,6 +44,7 @@ const Uploader = props => {
               <Link
                 href="#"
                 onClick={e => {
+                  e.nativeEvent.preventDefault();
                   e.preventDefault();
                   logger.log("clicking on contact us");
 
@@ -85,6 +86,7 @@ const Uploader = props => {
             <Link
               href="#"
               onClick={e => {
+                e.nativeEvent.preventDefault();
                 e.preventDefault();
 
                 logger.log("clicking on has problem");
