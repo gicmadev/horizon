@@ -1,5 +1,6 @@
 import { FileStatus } from "react-filepond";
 import tus from "tus-js-client";
+import logger from "../../utils/logger.js";
 
 const FakeBlob = class extends Blob {
   constructor(data) {
@@ -51,20 +52,23 @@ const useUploaderConfig = ({
             upload_id: uploadId
           },
           onError: function(err) {
-            console.error("Failed because: " + err);
+            logger.error("Failed because: " + err);
             load(uploadId);
             window.horizon_is_uploading = false;
             window.abort_upload = false;
           },
           onProgress: function(bytesUploaded, bytesTotal) {
+            logger.log("progress : ", uploadId, bytesUploaded, bytesTotal);
             progress(true, bytesUploaded, bytesTotal);
           },
           onSuccess: function() {
+            logger.log("success : ", uploadId);
             load(uploadId);
           }
         });
 
         window.abort_upload = () => {
+          logger.log("abort upload");
           upload.abort();
           abort();
           window.horizon_is_uploading = false;
@@ -73,6 +77,7 @@ const useUploaderConfig = ({
 
         // Start the upload
         upload.start();
+        logger.log("start upload");
 
         return {
           abort: window.abort_upload
@@ -100,11 +105,18 @@ const useUploaderConfig = ({
         })
           .then(resp => resp.json())
           .then(
-            body =>
-              body.errors
-                ? error(body.errors.detail || body.errors)
-                : load(new FakeBlob(body)),
-            err => error(err)
+            body => {
+              if (body.errors) {
+                log.error("load error", body.errors);
+                error(body.errors.detail || body.errors);
+              } else {
+                load(new FakeBlob(body));
+              }
+            },
+            err => {
+              log.error("load error", err);
+              error(err);
+            }
           )
           .finally(
             () => (window.abort_upload = window.horizon_is_uploading = false)
@@ -112,6 +124,7 @@ const useUploaderConfig = ({
 
         return {
           abort: () => {
+            logger.log("abort upload");
             controller.abort();
             abort();
             window.horizon_is_uploading = false;
@@ -147,6 +160,7 @@ const useUploaderConfig = ({
                     if (result.errors.detail === "Not Found") {
                       return load();
                     } else if (typeof result.errors.detail === "string") {
+                      logger.error("delete error", result.errors);
                       return error(result.errors.detail);
                     }
                   }
@@ -154,6 +168,7 @@ const useUploaderConfig = ({
                   if (result.ok === true && result.deleted === true)
                     return load();
 
+                  logger.error("delete error", result);
                   return error("Invalid server response");
                 },
                 () => {
@@ -199,6 +214,7 @@ const useUploaderConfig = ({
     },
     onprocessfile: (error, file) => {
       if (file.status === FileStatus.PROCESSING_COMPLETE) {
+        logger.log("processing complete", file);
         setHorizonUrl(`horizon://${file.serverId}`);
         setFileUploaded(file.serverId);
       }

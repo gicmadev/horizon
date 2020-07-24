@@ -4,8 +4,18 @@ import Uploader from "../Uploader";
 
 import RemoteURL from "../RemoteURL";
 
+import logger from "../../utils/logger";
+
 const UploaderBox = props => {
-  const { serverUrl, uploadId, token, url, urlImport, beforeDelete } = props;
+  const {
+    serverUrl,
+    uploadId,
+    token,
+    url,
+    urlImport,
+    beforeDelete,
+    hasProblem
+  } = props;
 
   const [files, setFiles] = useState([]);
   const [mode, setMode] = useState("upload");
@@ -26,17 +36,19 @@ const UploaderBox = props => {
         setHorizonUrl(url);
         setMode("upload");
         setFileUploaded(uploadId);
-        console.log("already uploaded");
+        logger.log("loading url", url, "already uploaded");
       } else if (/^https?:\/\/.+/.test(url)) {
         setOnlineUrl(url);
         setHorizonUrl("");
         setMode("online");
         setFiles([]);
+        logger.log("loading url", url, "remote file");
       } else {
         setOnlineUrl("");
         setHorizonUrl("");
         setMode("upload");
         setFiles([]);
+        logger.log("loading url", url, "no data");
       }
     }
   }, [url]);
@@ -60,6 +72,7 @@ const UploaderBox = props => {
           setFileUploaded={setFileUploaded}
           toggleMode={toggleMode}
           beforeDelete={beforeDelete}
+          hasProblem={hasProblem}
         />
       ) : (
         <RemoteURL

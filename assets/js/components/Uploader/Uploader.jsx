@@ -14,8 +14,10 @@ import useUploaderPhrases from "./Uploader.intl";
 
 import useUploaderConfig from "./Uploader.config";
 
+import logger from "../../utils/logger.js";
+
 const Uploader = props => {
-  const { uploadId, token, horizonUrl, files, toggleMode } = props;
+  const { uploadId, token, horizonUrl, files, toggleMode, hasProblem } = props;
 
   return (
     <ContentBox>
@@ -35,16 +37,61 @@ const Uploader = props => {
           value={horizonUrl}
         />
         <Typography align="right">
-          <Link
-            href={`https://podcloud.fr/contact?purpose=storage&bug=${window.btoa(
-              JSON.stringify({ uploadId, token, files })
-            )}`}
-            onClick={() => window.reloadUploader()}
-            target="_blank"
-            variant="body2"
-          >
-            Un problème?
-          </Link>
+          {hasProblem ? (
+            <Typography variant="caption" align="justify">
+              Le module d'envoi à été rechargé. Si votre problème n'est pas
+              résolu, vous pouvez{" "}
+              <Link
+                href="#"
+                onClick={() => {
+                  logger.log("clicking on contact us");
+
+                  const form = document.createElement("form");
+                  form.action = `/uploader-issue`;
+                  form.method = "POST";
+                  form.target = "_blank";
+
+                  const purposeInput = document.createElement("input");
+                  purposeInput.name = "purpose";
+                  purposeInput.type = "hidden";
+                  purposeInput.value = "storage";
+                  form.appendChild(purposeInput);
+
+                  const bugInput = document.createElement("input");
+                  bugInput.name = "bug";
+                  bugInput.type = "hidden";
+                  bugInput.value = window.btoa(
+                    JSON.stringify({
+                      uploadId,
+                      token,
+                      files,
+                      logs: logger.getLogs()
+                    })
+                  );
+                  form.appendChild(bugInput);
+
+                  document.body.appendChild(form);
+
+                  form.submit();
+                }}
+                variant="body2"
+              >
+                nous contacter
+              </Link>
+              .
+            </Typography>
+          ) : (
+            <Link
+              href="#"
+              onClick={() => {
+                logger.log("clicking on has problem");
+                window.reloadUploader(true);
+              }}
+              variant="body2"
+            >
+              Un problème?
+            </Link>
+          )}
         </Typography>
       </InputsBox>
       <Typography align="left">
