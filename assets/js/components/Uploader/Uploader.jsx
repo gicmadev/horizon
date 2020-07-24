@@ -36,9 +36,10 @@ const Uploader = props => {
         />
         <Typography align="right">
           <Link
-            href={`https://podcloud.fr/contact?purpose=storage&bug=${encodeURIComponent(
+            href={`https://podcloud.fr/contact?purpose=storage&bug=${window.btoa(
               JSON.stringify({ uploadId, token, files })
             )}`}
+            onClick={() => window.reloadUploader()}
             target="_blank"
             variant="body2"
           >

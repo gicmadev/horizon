@@ -40,7 +40,7 @@ const useUploaderConfig = ({
         var upload = new tus.Upload(file, {
           endpoint: [serverUrl, "upload", uploadId, "chunks"].join("/") + "/", // Final / is important
           retryDelays: [0, 1000, 3000, 5000, 15000],
-          chunkSize: 2.5 * 1024 * 1024,
+          chunkSize: 0.5 * 1024 * 1024,
           withCredentials: false,
           headers: {
             Authorization: `Bearer ${token}`
@@ -52,7 +52,7 @@ const useUploaderConfig = ({
           },
           onError: function(err) {
             console.error("Failed because: " + err);
-            error(err);
+            load(uploadId);
             window.horizon_is_uploading = false;
             window.abort_upload = false;
           },
