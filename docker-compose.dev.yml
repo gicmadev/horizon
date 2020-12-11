@@ -12,7 +12,7 @@ services:
       - ./tmp:/tmp
       - .:/app
     networks:
-      - traefik
+      - default
       - podcloud
     ports:
       - 4000:4000
@@ -20,16 +20,26 @@ services:
       - ./.env.development.local
     environment:
       MIX_HOME: /var/run/.mix
+
+  nginx:
+    image: nginx:1.19
+    volumes:
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf
+      - ./downloads:/private/downloads
+    networks:
+      - default
+      - podcloud
+      - traefik
     labels:
       traefik.frontend.rule: "Host:warp.horizon.gicma.dev.test,horizon.gicma.dev.test"
       traefik.frontend.priority: 999999
-      traefik.port: 4000
 
   webpack:
     image: node:10
     volumes:
       - .:/app
     networks:
+      - default
       - podcloud
     working_dir: /app
     labels:
@@ -41,6 +51,7 @@ services:
     volumes:
       - .:/app
     networks:
+      - default
       - traefik
       - podcloud
     working_dir: /app
@@ -57,6 +68,7 @@ services:
     networks:
       - traefik
       - podcloud
+      - default
     volumes:
       - /fakes3_root
 
