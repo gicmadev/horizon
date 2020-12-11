@@ -6,8 +6,6 @@ defmodule HorizonWeb.DownloadController do
 
   import Logger
 
-  plug(HorizonWeb.Plugs.RemoveTimeout)
-
   def download(conn, params) do
     %{"upload_id" => upload_id} = params
     upload_id = upload_id |> String.split(".") |> Enum.at(0)
@@ -45,7 +43,8 @@ defmodule HorizonWeb.DownloadController do
           "Accept-Ranges",
           "bytes"
         )
-        |> send_file(200, file_path)
+        |> send_resp(200, "")
+        #|> send_file(200, file_path)
         |> halt
 
       [ {offset, size} | _ ] ->
@@ -54,7 +53,8 @@ defmodule HorizonWeb.DownloadController do
           "content-range",
           "bytes #{offset}-#{offset+size-1}/#{file_size}"
         )
-        |> send_file(206, file_path, offset, size)
+        |> send_resp(206, "")
+        #|> send_file(206, file_path, offset, size)
         |> halt
     end
   end
