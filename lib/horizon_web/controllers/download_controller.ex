@@ -42,6 +42,7 @@ defmodule HorizonWeb.DownloadController do
           "bytes"
         )
         |> send_file(200, file_path)
+        |> halt
 
       [ {offset, size} | _ ] ->
         conn
@@ -49,7 +50,8 @@ defmodule HorizonWeb.DownloadController do
           "content-range",
           "bytes #{offset}-#{offset+size-1}/#{file_size}"
         )
-          |> send_file(206, file_path, offset, size)
+        |> send_file(206, file_path, offset, size)
+        |> halt
     end
   end
 
@@ -62,6 +64,7 @@ defmodule HorizonWeb.DownloadController do
           "bytes"
         )
         |> DownloadStream.stream_download(download_stream, 0)
+        |> halt
 
       [ {offset, size} | _ ] ->
         conn
@@ -71,6 +74,7 @@ defmodule HorizonWeb.DownloadController do
         )
         |> send_chunked(206)
         |> DownloadStream.stream_download(download_stream, offset)
+        |> halt
     end
   end
 
