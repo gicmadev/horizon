@@ -33,6 +33,10 @@ defmodule HorizonWeb.DownloadController do
           "cache-control",
           "max-age=3600"
         )
+        |> put_resp_header(
+          "X-Accel-Redirect",
+          file_path
+        )
 
     case get_ranges(conn.req_headers, file_size) do
       nil ->

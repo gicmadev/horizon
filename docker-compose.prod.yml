@@ -8,14 +8,21 @@ services:
       - ./downloads:/downloads
       - ./prod.secret.exs:/app/config/prod.secret.exs
     networks:
-      - traefik
       - horizon
     env_file:
       - ./.env.production.local
+
+  nginx:
+    image: nginx:1.19
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf
+      - ./downloads:/private/downloads
+    networks:
+      - horizon
+      - traefik
     labels:
         traefik.frontend.rule: "Host:warp.horizon.gicma.dev,horizon.gicma.dev"
         traefik.enable: true
-        traefik.port: 4000
 
 networks:
   traefik:
