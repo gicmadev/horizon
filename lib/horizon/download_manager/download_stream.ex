@@ -16,7 +16,7 @@ defmodule Horizon.DownloadManager.DownloadStream do
       Logger.debug("Will send stream from #{stream.path} bytes : #{offset} - #{limit}")
 
       if current_size < offset do
-        Logger.debug("waiting 1000ms")
+        Logger.debug("waiting 500ms")
         Process.sleep(500)
         stream_download(conn, stream, offset)
       else
