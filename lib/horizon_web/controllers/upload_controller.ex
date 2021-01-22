@@ -45,6 +45,7 @@ defmodule HorizonWeb.UploadController do
       name: upload.filename,
       size: upload.content_length,
       type: upload.content_type,
+      sha256: upload.sha256,
       duration: upload.duration,
       artwork: upload.artwork
     }
