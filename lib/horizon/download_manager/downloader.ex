@@ -269,7 +269,7 @@ defmodule Horizon.DownloadManager.Downloader do
     status =
       case state do
         {:ok} -> :finished
-        {:error, %HTTPoison.Error{reason: reason}} -> {:errored, reason}
+        {:error, %HTTPoison.Error{reason: reason}} -> {:errored, {:httpoison, reason}}
         {:error, reason} -> {:errored, reason}
         {:error} -> {:errored, :unknown}
         {:crash, reason} -> {:crashed, reason}

@@ -40,19 +40,9 @@ defmodule Horizon.StorageManager.Provider.Wasabi do
     end
   end
 
-  def unstore!(%Blob{id: id, sha256: sha256} = blob) do
-    case id do
-      nil ->
-        :ok
-
-      _id ->
-        Repo.transaction(fn ->
-          blob |> Repo.delete!
-          S3.delete_object(@bucket, get_path(sha256))
-        end)
-
-        :ok
-    end
+  def unstore!(%Blob{sha256: sha256} = blob) do
+    S3.delete_object(@bucket, get_path(sha256))
+    blob |> Repo.delete!
   end
 
   def get_blob_path(%{sha256: sha256, storage: @name}), do: get_path(sha256)

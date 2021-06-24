@@ -25,6 +25,7 @@ defmodule Horizon.StorageManager do
   end
 
   @clean_uploads_interval 60 * 60 * 1_000
+  @clean_orphans_interval 10 * 60 * 1_000
   @wasabi_uploads_interval 3 * 60 * 1_000
 
   # Server (callbacks)
@@ -32,6 +33,7 @@ defmodule Horizon.StorageManager do
   def init(_) do
     Process.send_after(self(), :clean_uploads, 1_000)
     Process.send_after(self(), :send_uploads_to_wasabi, 5_000)
+    Process.send_after(self(), :clean_orphans, 5_000)
 
     {:ok, %{last_clean_uploads_at: nil}}
   end
@@ -46,10 +48,10 @@ defmodule Horizon.StorageManager do
   end
 
   @impl true
-  def handle_info(:clean_orphan_blobs, state) do
-    clean_uploads()
+  def handle_info(:clean_orphans, state) do
+    clean_orphans()
 
-    Process.send_after(self(), :clean_orphans_blobs, @clean_uploads_interval)
+    Process.send_after(self(), :clean_orphans, @clean_orphans_interval)
 
     {:noreply, Map.merge(state, %{last_clean_orphans_at: :calendar.local_time()})}
   end
@@ -73,15 +75,19 @@ defmodule Horizon.StorageManager do
     |> Repo.delete_all()
   end
 
-  def clean_orphans_blobs do
+  def clean_orphans do
     # Clean orphan blobs
-    from(
+    orphans = from(
       b in Blob,
       left_join: u in Upload,
       on: b.sha256 == u.sha256,
       where: is_nil(u.id)
     )
     |> Repo.all()
+
+    Logger.debug("Found #{Enum.count(orphans)} orphan")
+
+    orphans
     |> Enum.each(&StorageManager.unstore!/1)
   end
 
@@ -110,10 +116,12 @@ defmodule Horizon.StorageManager do
   end
 
   def unstore!(%{storage: :mirage} = b) do
+    Logger.debug("Mirage will unstore blob #{inspect(b)}")
     Mirage.unstore!(b)
   end
 
   def unstore!(%{storage: :wasabi} = b) do
+    Logger.debug("Wasabi will unstore blob #{inspect(b)}")
     Wasabi.unstore!(b)
   end
 
