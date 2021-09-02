@@ -1,0 +1,40 @@
+version: "3"
+services:
+  postgres:
+    image: postgres
+    container_name: "postgres"
+    hostname: "postgres"
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    labels:
+      - traefik.enable:false
+    networks:
+        podcloud:
+            ipv4_address: 172.20.0.80
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: "pgadmin"
+    restart: unless-stopped
+    ports:
+      - 80:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    labels:
+        traefik.frontend.rule: "Host: pgadmin.test"
+        traefik.frontend.priority: 10000
+    networks:
+      - traefik
+      - podcloud
+
+networks:
+  traefik:
+    external: true
+  podcloud:
+    external: true
+
