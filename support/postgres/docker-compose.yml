@@ -11,8 +11,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     networks:
-      - default
-      - traefik
       - podcloud
     labels:
       - traefik.enable:false
@@ -28,9 +26,8 @@ services:
         traefik.frontend.rule: "Host: pgadmin.test"
         traefik.frontend.priority: 10000
     networks:
-      - default
-      - traefik
       - podcloud
+      - traefik
 
 networks:
   traefik:
