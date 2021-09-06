@@ -2,9 +2,12 @@
 
 To start your Phoenix server:
 
-  * Install dependencies with `mix deps.get`
-  * Create and migrate your database with `mix ecto.setup`
-  * Start Phoenix endpoint with `mix phx.server`
+  * `docker-compose run --rm horizon mix local.hex --force`
+  * `docker-compose run --rm horizon mix local.rebar --force`
+  * `docker-compose run --rm horizon mix deps.get`
+  * `docker-compose run --rm horizon mix do ecto.create, ecto.setup`
+  * `docker-compose run --rm storybook yarn`
+  * `docker-compose up -d`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
