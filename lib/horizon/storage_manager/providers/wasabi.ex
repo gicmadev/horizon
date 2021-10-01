@@ -42,7 +42,7 @@ defmodule Horizon.StorageManager.Provider.Wasabi do
 
   def unstore!(%Blob{sha256: sha256} = blob) do
     S3.delete_object(@bucket, get_path(sha256))
-    blob |> Repo.delete!
+    blob |> Repo.delete!()
   end
 
   def get_blob_path(%{sha256: sha256, storage: @name}), do: get_path(sha256)
@@ -53,6 +53,6 @@ defmodule Horizon.StorageManager.Provider.Wasabi do
     sha256
     |> String.split("")
     |> Enum.slice(1, 6)
-    |> Path.join
+    |> Path.join()
   end
 end
