@@ -19,6 +19,7 @@
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-filepond": "^7.0.1",
+    "style-loader": "^3.3.0",
     "tus-js-client": "^1.8.0"
   },
   "devDependencies": {
@@ -33,7 +34,7 @@
     "@storybook/react": "^5.1.11",
     "babel-loader": "^8.0.0",
     "copy-webpack-plugin": "^4.5.0",
-    "css-loader": "^3.2.0",
+    "css-loader": "^6.3.0",
     "prettier": "^1.18.2",
     "uglifyjs-webpack-plugin": "^1.2.4",
     "webpack": "4.28.4",

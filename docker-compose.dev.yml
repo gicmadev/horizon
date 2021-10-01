@@ -35,7 +35,7 @@ services:
       traefik.frontend.priority: 999999
 
   webpack:
-    image: node:10
+    image: node:12
     volumes:
       - .:/app
     networks:
@@ -47,7 +47,7 @@ services:
     command: ["npm", "run", "watch"]
 
   storybook:
-    image: node:10
+    image: node:12
     volumes:
       - .:/app
     networks:
