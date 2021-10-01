@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-export REPO=podshows/podcloud-feeds
+export REPO=gicmadev/horizon
 export COMMIT=$(git rev-parse --short=8 HEAD)
 export TAG=latest
 
