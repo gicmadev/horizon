@@ -77,13 +77,14 @@ defmodule Horizon.StorageManager do
 
   def clean_orphans do
     # Clean orphan blobs
-    orphans = from(
-      b in Blob,
-      left_join: u in Upload,
-      on: b.sha256 == u.sha256,
-      where: is_nil(u.id)
-    )
-    |> Repo.all()
+    orphans =
+      from(
+        b in Blob,
+        left_join: u in Upload,
+        on: b.sha256 == u.sha256,
+        where: is_nil(u.id)
+      )
+      |> Repo.all()
 
     Logger.debug("Found #{Enum.count(orphans)} orphan")
 

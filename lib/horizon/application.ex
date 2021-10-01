@@ -16,7 +16,7 @@ defmodule Horizon.Application do
       # {Horizon.Worker, arg},
       Horizon.DownloadManager,
       Horizon.StorageManager,
-      Horizon.StorageManager.Provider.Wasabi.UploadManager,
+      Horizon.StorageManager.Provider.Wasabi.UploadManager
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

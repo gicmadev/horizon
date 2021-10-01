@@ -39,7 +39,7 @@ defmodule Horizon.StorageManager.Provider.Mirage do
       _ -> File.rm!(path)
     end
 
-    blob |> Repo.delete!
+    blob |> Repo.delete!()
   end
 
   def get_blob_path(%{remote_id: sha256, storage: @name}), do: get_path(sha256)
@@ -47,12 +47,12 @@ defmodule Horizon.StorageManager.Provider.Mirage do
   defp get_path(sha256), do: get_dir(sha256) |> Path.join(sha256)
 
   defp get_dir(sha256) do
-    @mirage_dir 
+    @mirage_dir
     |> Path.join(
       sha256
       |> String.split("")
       |> Enum.slice(1, 6)
-      |> Path.join
+      |> Path.join()
     )
   end
 end

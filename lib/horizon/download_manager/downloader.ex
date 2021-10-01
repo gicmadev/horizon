@@ -25,7 +25,11 @@ defmodule Horizon.DownloadManager.Downloader do
   defp do_request(%{url: url}) do
     Logger.debug("Starting GET request to #{url} with stream_to #{inspect(self())}")
 
-    HTTPoison.get(url, %{},
+    HTTPoison.get(
+      url,
+      [
+        {"User-Agent", "podCloud Horizon Importer like iTunes or Spotify"}
+      ],
       stream_to: self(),
       follow_redirect: true,
       hackney: [force_redirect: true, max_redirect: 15],
@@ -137,14 +141,16 @@ defmodule Horizon.DownloadManager.Downloader do
   defp send_progress(req = %{download_pid: pid}, size) when is_integer(size) do
     send(pid, {:update_progress, {:add_downloaded_bytes, size}})
 
-    req 
+    req
     |> Map.update(:downloaded, 0, &(&1 + size))
   end
 
   defp handle_wait_timeout(req = %{downloaded: dl, content_length: cl}) do
     Logger.debug("handling wait timeout ! waited #{@wait_timeout}")
     Logger.debug("Will finish download if #{dl} = #{cl}")
-    req |> finish_download(
+
+    req
+    |> finish_download(
       if dl == cl do
         {:ok}
       else
