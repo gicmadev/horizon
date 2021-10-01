@@ -35,7 +35,6 @@ module.exports = (env, options) => ({
   },
   plugins: [new CopyWebpackPlugin([{ from: "assets/static/", to: "../" }])],
   resolve: {
-    extensions: [".js", ".jsx", ".json"],
-    modulesDirectories: ["node_modules"]
+    extensions: [".js", ".jsx", ".json"]
   }
 });
