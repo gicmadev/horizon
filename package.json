@@ -34,8 +34,9 @@
     "@storybook/react": "^5.1.11",
     "babel-loader": "^8.0.0",
     "copy-webpack-plugin": "^4.5.0",
-    "css-loader": "^6.3.0",
+    "css-loader": "^5.2.7",
     "prettier": "^1.18.2",
+    "style-loader": "^2.0.0",
     "uglifyjs-webpack-plugin": "^1.2.4",
     "webpack": "4.28.4",
     "webpack-cli": "^3.2.1"
