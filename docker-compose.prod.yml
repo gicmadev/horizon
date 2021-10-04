@@ -3,7 +3,7 @@ version: "3.4"
 services:
   horizon:
     image: gicmadev/horizon
-    build: .
+    restart: always
     volumes:
       - ./downloads:/downloads
       - ./prod.secret.exs:/app/config/prod.secret.exs
@@ -14,6 +14,7 @@ services:
 
   nginx:
     image: nginx:1.19
+    restart: always
     volumes:
       - ./nginx.prod.conf:/etc/nginx/nginx.conf
       - ./downloads:/private/downloads
