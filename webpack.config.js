@@ -4,7 +4,8 @@ const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = (env, options) => ({
-  mode: "development",
+  mode: options.mode || "production",
+  devtool: options.mode === "development" ? "source-map" : false,
   optimization: {
     minimizer: [
       new UglifyJsPlugin({ cache: true, parallel: true, sourceMap: false })
@@ -35,7 +36,6 @@ module.exports = (env, options) => ({
   },
   plugins: [new CopyWebpackPlugin([{ from: "assets/static/", to: "../" }])],
   resolve: {
-    extensions: [".js", ".jsx", ".json"],
-    modulesDirectories: ["node_modules"]
+    extensions: [".js", ".jsx", ".json"]
   }
 });
