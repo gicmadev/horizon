@@ -22,7 +22,7 @@ services:
       - horizon
       - traefik
     labels:
-        traefik.frontend.rule: "Host:warp.horizon.gicma.dev,horizon.gicma.dev"
+        traefik.frontend.rule: "Host:warp-horizon.gicma.dev,horizon.gicma.dev"
         traefik.enable: true
 
 networks:
