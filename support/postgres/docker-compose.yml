@@ -1,7 +1,7 @@
 version: "3"
 services:
   postgres:
-    image: postgres
+    image: postgres:13
     container_name: "postgres"
     hostname: "postgres"
     restart: unless-stopped
@@ -22,6 +22,7 @@ services:
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@pgadmin.test
       - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=False
     labels:
         traefik.frontend.rule: "Host: pgadmin.test"
         traefik.frontend.priority: 10000
