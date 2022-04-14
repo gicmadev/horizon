@@ -11,7 +11,7 @@ WORKDIR /app
 
 CMD ["mix", "phx.server"]
 
-FROM node as node-builder
+FROM node:16 as node-builder
 
 WORKDIR /app
 
