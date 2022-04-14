@@ -114,6 +114,12 @@ defmodule HorizonWeb.UploadController do
     conn |> send_ok_data(%{burnt: true})
   end
 
+  def move(conn, %{"upload_id" => upload_id, "owner" => owner, "bucket" => bucket, "source" => source}) do
+    {:ok, :moved} = Horizon.StorageManager.move!(upload_id, owner, bucket, source)
+
+    conn |> send_ok_data(%{moved: true})
+  end
+
   def download(conn, params = %{"upload_id" => upload_id, "url" => url}) do
     with {:is_new, true} <- {:is_new, Horizon.StorageManager.is_new?(upload_id)},
          {:store_remote, {:ok, {:started, _, _}}} <-

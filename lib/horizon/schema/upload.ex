@@ -106,6 +106,12 @@ defmodule Horizon.Schema.Upload do
   end
 
   @doc false
+  def move(upload, owner, bucket, source) do
+    upload
+    |> cast(%{owner: owner, bucket: bucket, source: source}, [:owner, :bucket, :source])
+  end
+
+  @doc false
   def write_metadata(upload, attrs) do
     upload
     |> cast(attrs, [:duration, :artwork])

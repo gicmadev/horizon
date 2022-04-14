@@ -231,6 +231,14 @@ defmodule Horizon.StorageManager do
     {:ok, :burnt}
   end
 
+  def move!(upload_id, owner, bucket, source) do
+    Repo.get!(Upload, upload_id)
+    |> Upload.move(owner, bucket, source)
+    |> Repo.update!()
+
+    {:ok, :moved}
+  end
+
   def store_remote!(upload_id, url) do
     Repo.transaction(fn ->
       from(
@@ -317,12 +325,12 @@ defmodule Horizon.StorageManager do
   def storage_status(owner \\ nil) do
     query =
       """
-        SELECT 
-          bucket as feed_id, 
-          CEIL(SUM(content_length))::BIGINT AS total_size, 
-          SUM(duration) as total_duration, 
-          COUNT(owner) as episodes_count 
-        FROM public.uploads 
+        SELECT
+          bucket as feed_id,
+          CEIL(SUM(content_length))::BIGINT AS total_size,
+          SUM(duration) as total_duration,
+          COUNT(owner) as episodes_count
+        FROM public.uploads
         WHERE status='ok'%ADD_OWNER_CLAUSE%
         GROUP BY bucket;
       """
@@ -352,7 +360,7 @@ defmodule Horizon.StorageManager do
         ) as recent_speed,
         COUNT(inserted_at) as recent_count
       FROM public.uploads
-      WHERE 
+      WHERE
         inserted_at > date_trunc(
           'day', NOW() - interval '12 month'
       ) AND status='ok' %ADD_OWNER_CLAUSE%;

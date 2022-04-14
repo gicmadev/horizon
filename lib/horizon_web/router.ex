@@ -27,6 +27,8 @@ defmodule HorizonWeb.Router do
     delete "/upload/:upload_id/revert", UploadController, :revert
     delete "/upload/:upload_id", UploadController, :delete
 
+    put "/upload/:upload_id/move", UploadController, :move
+
     put "/upload/:upload_id/download", UploadController, :download
 
     post "/upload/:upload_id/burn", UploadController, :burn
