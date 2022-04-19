@@ -4,3 +4,7 @@
 .filepond--root {
   margin-bottom: 0;
 }
+.filepond--credits {
+  display: none;
+  pointer-events: none;
+}
