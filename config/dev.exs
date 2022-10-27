@@ -82,6 +82,16 @@ config :horizon, Horizon.Repo,
   pool_size: 10
 
 config :ex_aws,
-  debug_requests: true
+  debug_requests: true,
+  access_key_id: "ignore",
+  secret_access_key: "ignore"
 
-config :ex_aws, :s3, bucket: "horizon-dev"
+config :ex_aws, :s3,
+  scheme: "http://",
+  host: "fake_s3",
+  bucket: "horizon-dev",
+  access_key_id: "ignore",
+  secret_access_key: "ignore",
+  port: 4569,
+  debug_requests: true,
+  region: "us-east-1"

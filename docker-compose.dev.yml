@@ -15,7 +15,7 @@ services:
       - default
       - podcloud
     ports:
-      - 4000:4000
+      - 4000
     env_file:
       - ./.env.development.local
     environment:
@@ -31,7 +31,7 @@ services:
       - podcloud
       - traefik
     labels:
-      traefik.frontend.rule: "Host:warp.horizon.gicma.dev.test,horizon.gicma.dev.test"
+      traefik.frontend.rule: "Host:warp-horizon.gicma.dev.test,horizon.gicma.dev.test"
       traefik.frontend.priority: 999999
 
   webpack:
@@ -43,28 +43,28 @@ services:
       - podcloud
     working_dir: /app
     labels:
-        traefik.enabled: false
+      traefik.enabled: false
     command: ["npm", "run", "watch"]
 
-  storybook:
-    image: node:12
-    volumes:
-      - .:/app
-    networks:
-      - default
-      - traefik
-      - podcloud
-    working_dir: /app
-    labels:
-        traefik.frontend.rule: "HostRegexp:sb.horizon.gicma.dev.test"
-        traefik.frontend.priority: 999999
-        traefik.port: 6006
-    command: ["npm", "run", "storybook"]
+  # storybook:
+  #   image: node:12
+  #   volumes:
+  #     - .:/app
+  #   networks:
+  #     - default
+  #     - traefik
+  #     - podcloud
+  #   working_dir: /app
+  #   labels:
+  #     traefik.frontend.rule: "HostRegexp:sb.horizon.gicma.dev.test"
+  #     traefik.frontend.priority: 999999
+  #     traefik.port: 6006
+  #   command: ["npm", "run", "storybook"]
 
   fake_s3:
-    image: lphoward/fake-s3
+    image: camjackson/fake-s3
     ports:
-      - 4569:4569
+      - "0.0.0.0:4569:4569"
     networks:
       - traefik
       - podcloud

@@ -7,6 +7,8 @@ defmodule Horizon.StorageManager.Provider.Wasabi.Uploader do
 
   def start(file_path, sha256, bucket, remote_path, provider_pid) do
     Logger.info("Starting upload of #{inspect(file_path)}")
+    Logger.info("bucket : #{inspect(bucket)}")
+    Logger.info("remote path : #{inspect(remote_path)}")
 
     result =
       file_path
